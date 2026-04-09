@@ -128,6 +128,42 @@ NuSpec.AI uses Roslyn's semantic model to infer what each type *does*, not just 
 | `entry-point` | Extension methods on `IServiceCollection` |
 | `service-collection-extension` | Static class extending `IServiceCollection` |
 
+## Context Window Impact
+
+**The core value: one file gives an AI complete API knowledge that otherwise requires reading every source file — or isn't available at all.**
+
+When your package is consumed as a NuGet reference, the AI assistant has no source code to read. It can see the `.dll` in the references, but it can't inspect it without reflection. `package-map.json` gives it structured, immediate access to every public type, method signature, doc comment, and semantic role.
+
+### How big is the file?
+
+The JSON captures only the **public API surface** — no method bodies, no private members, no `using` statements. Its size depends on the shape of your API, not the complexity of your implementation.
+
+**Measured across 24 production projects (3.5 MB of source code):**
+
+| Project Profile | Types | Source | JSON | Change |
+|----------------|-------|--------|------|--------|
+| Azure Functions (services, business logic) | 21 | 192 KB | 32 KB | **-84%** |
+| Data processing functions | 18 | 102 KB | 18 KB | **-82%** |
+| Common services library | 44 | 515 KB | 119 KB | **-77%** |
+| Azure provisioning functions | 16 | 95 KB | 26 KB | **-73%** |
+| API client library | 7 | 41 KB | 13 KB | **-67%** |
+| Database management | 16 | 108 KB | 41 KB | **-62%** |
+| Shared library (673 types) | 673 | 1,061 KB | 880 KB | **-17%** |
+| Common providers | 116 | 510 KB | 287 KB | **-44%** |
+| Models library (mostly DTOs) | 723 | 527 KB | 840 KB | +59% |
+
+**Across all 24 projects: 3,554 KB of source → 2,424 KB of JSON (32% smaller overall).**
+
+**What drives the size:** the number of public types and members, not the amount of implementation code. A service with 5 public methods produces the same JSON whether those methods are 10 lines or 200 lines each.
+
+**When the JSON saves the most:** Projects with substantial implementation logic — services, functions, repositories, middleware. Savings of 60–84% are typical.
+
+**When the JSON is larger:** Model-heavy projects with hundreds of small DTOs, enums, and interfaces where the source is already lean. The JSON metadata structure adds overhead that exceeds what was stripped.
+
+### The real comparison
+
+For **NuGet package consumers**, the alternative to `package-map.json` isn't "read the source" — it's "have no structured API context at all." The AI would need to rely on IntelliSense hints, documentation websites, or asking you to explain the API. One JSON file replaces all of that with a complete, machine-readable API map.
+
 ## Configuration
 
 ### Disabling generation
