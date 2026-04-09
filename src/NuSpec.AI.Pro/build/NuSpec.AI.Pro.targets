@@ -14,7 +14,7 @@
 
   <!-- Resolve license key from MSBuild property (highest priority; lower priorities handled in CLI) -->
   <PropertyGroup>
-    <_NuSpecAiProLicenseArg Condition="'$(NuSpecAiLicenseKey)' != ''">--license "$(NuSpecAiLicenseKey)"</_NuSpecAiProLicenseArg>
+    <_NuSpecAiProLicenseArg Condition="'$(NuSpecAiLicenseKey)' != ''">--license $(NuSpecAiLicenseKey)</_NuSpecAiProLicenseArg>
     <_NuSpecAiProLicenseArg Condition="'$(NuSpecAiLicenseKey)' == ''"></_NuSpecAiProLicenseArg>
   </PropertyGroup>
 
