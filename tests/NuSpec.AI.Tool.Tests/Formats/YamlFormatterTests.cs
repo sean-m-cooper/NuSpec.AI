@@ -57,12 +57,15 @@ public class YamlFormatterTests : FormatterTestBase
     {
         var map = BuildSamplePackageMap();
         var result = _formatter.Serialize(map);
-        // OrderStatus has no documentation — check that documentation doesn't appear in its section
-        var orderStatusIdx = result.IndexOf("OrderStatus", StringComparison.Ordinal);
-        var nextTypeIdx = result.IndexOf("- name:", orderStatusIdx + 1, StringComparison.Ordinal);
+        // Find the OrderStatus type entry specifically (not just any occurrence of the name)
+        var typeEntryMarker = "- name: OrderStatus";
+        var typeEntryIdx = result.IndexOf(typeEntryMarker, StringComparison.Ordinal);
+        Assert.True(typeEntryIdx >= 0, "OrderStatus type entry not found in YAML");
+        // Find the end of the OrderStatus type section (next type entry or end of string)
+        var nextTypeIdx = result.IndexOf("- name:", typeEntryIdx + typeEntryMarker.Length, StringComparison.Ordinal);
         var orderStatusSection = nextTypeIdx > 0
-            ? result[orderStatusIdx..nextTypeIdx]
-            : result[orderStatusIdx..];
+            ? result[typeEntryIdx..nextTypeIdx]
+            : result[typeEntryIdx..];
         Assert.DoesNotContain("documentation:", orderStatusSection);
     }
 }
