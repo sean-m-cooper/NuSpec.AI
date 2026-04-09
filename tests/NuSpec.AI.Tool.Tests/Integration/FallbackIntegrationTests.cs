@@ -16,6 +16,7 @@ public class FallbackIntegrationTests : IDisposable
     private readonly string _projectDir;
     private readonly string _outputDir;
     private readonly string _csprojPath;
+    private readonly string? _savedLicenseKey;
 
     private const string PackageId = "Acme.TestLib";
 
@@ -28,6 +29,9 @@ public class FallbackIntegrationTests : IDisposable
 
     public FallbackIntegrationTests()
     {
+        _savedLicenseKey = Environment.GetEnvironmentVariable("NUSPEC_AI_LICENSE_KEY");
+        Environment.SetEnvironmentVariable("NUSPEC_AI_LICENSE_KEY", null);
+
         var baseDir = Path.Combine(Path.GetTempPath(), "nuspecai-fallback-test-" + Guid.NewGuid().ToString("N")[..8]);
         _projectDir = Path.Combine(baseDir, "src");
         _outputDir  = Path.Combine(baseDir, "out");
@@ -62,6 +66,7 @@ public class FallbackIntegrationTests : IDisposable
 
     public void Dispose()
     {
+        Environment.SetEnvironmentVariable("NUSPEC_AI_LICENSE_KEY", _savedLicenseKey);
         var baseDir = Path.GetDirectoryName(_projectDir)!;
         if (Directory.Exists(baseDir))
             Directory.Delete(baseDir, recursive: true);
@@ -92,8 +97,7 @@ public class FallbackIntegrationTests : IDisposable
 
         var isProFormatsRequested = effectiveFormats
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Any(f => !f.Equals("json", StringComparison.OrdinalIgnoreCase))
-            || effectiveFormats.Equals("all", StringComparison.OrdinalIgnoreCase);
+            .Any(f => !f.Equals("json", StringComparison.OrdinalIgnoreCase));
 
         if (!hasProLicense && isProFormatsRequested)
         {

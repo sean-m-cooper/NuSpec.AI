@@ -92,8 +92,7 @@ public class ProLicenseIntegrationTests : IDisposable
 
         var isProFormatsRequested = effectiveFormats
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Any(f => !f.Equals("json", StringComparison.OrdinalIgnoreCase))
-            || effectiveFormats.Equals("all", StringComparison.OrdinalIgnoreCase);
+            .Any(f => !f.Equals("json", StringComparison.OrdinalIgnoreCase));
 
         if (!hasProLicense && isProFormatsRequested)
         {
