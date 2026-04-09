@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/NuSpec.AI.Tool/NuSpec.AI.Tool.csproj" />
+    <Project Path="src/NuSpec.AI.Attributes/NuSpec.AI.Attributes.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj" />

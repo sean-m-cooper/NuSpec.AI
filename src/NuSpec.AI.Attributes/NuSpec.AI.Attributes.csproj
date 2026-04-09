@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>NuSpec.AI</RootNamespace>
+
+    <PackageId>NuSpec.AI.Attributes</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Attributes for controlling NuSpec.AI Pro output: [AiRole], [AiIgnore], [AiDescription].</Description>
+    <Authors>Sean Cooper</Authors>
+    <PackageTags>AI;NuGet;attributes;NuSpec.AI</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+</Project>
