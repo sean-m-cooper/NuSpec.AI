@@ -31,14 +31,33 @@ dotnet pack
 
 ## Output Formats
 
-| Format | File | Token Savings |
-|--------|------|--------------|
+| Format | File | Avg. Token Savings |
+|--------|------|--------------------|
 | `json` | `ai/package-map.json` | Baseline (same as free) |
-| `yaml` | `ai/package-map.yaml` | ~30–40% fewer tokens |
-| `compact` | `ai/package-map.compact.json` | ~40–50% fewer tokens |
-| `ultra` | `ai/package-map.ultra` | ~70–80% fewer tokens |
+| `yaml` | `ai/package-map.yaml` | **29%** fewer tokens |
+| `compact` | `ai/package-map.compact.json` | **40%** fewer tokens |
+| `ultra` | `ai/package-map.ultra` | **71%** fewer tokens |
 
 Use `<NuSpecAiFormats>all</NuSpecAiFormats>` to generate all four. Mix and match as needed — `json;yaml`, `ultra` only, etc.
+
+### Token count comparison
+
+Measured across 42 production projects (3 real codebases). Token counts are approximate (chars ÷ 4).
+
+| Project profile | Types | JSON | YAML | Compact | Ultra |
+|----------------|------:|-----:|-----:|--------:|------:|
+| Models library | 723 | 215,221 | 140,003 (−35%) | 110,848 (−48%) | **32,154 (−85%)** |
+| Large shared library | 673 | 225,503 | 149,950 (−34%) | 122,876 (−46%) | **44,468 (−80%)** |
+| Worker service | 131 | 45,684 | 32,490 (−29%) | 28,652 (−37%) | **13,866 (−70%)** |
+| Providers library | 116 | 73,632 | 53,987 (−27%) | 49,229 (−33%) | **28,364 (−61%)** |
+| DAL / repositories | 73 | 30,746 | 19,887 (−35%) | 16,969 (−45%) | **6,795 (−78%)** |
+| Common services | 44 | 30,571 | 23,088 (−24%) | 21,122 (−31%) | **13,076 (−57%)** |
+| Web API surface | 50 | 15,163 | 10,228 (−33%) | 8,447 (−44%) | **3,283 (−78%)** |
+| Azure Functions | 16 | 6,677 | 4,926 (−26%) | 4,540 (−32%) | **2,367 (−65%)** |
+| Exception types | 8 | 3,504 | 2,433 (−31%) | 2,009 (−43%) | **679 (−81%)** |
+| **All 42 projects** | **—** | **789,131** | **536,463 (−32%)** | **449,049 (−43%)** | **184,630 (−77%)** |
+
+**What drives savings:** `ultra` encodes the same data in a custom terse text format — no JSON structure overhead, abbreviated type prefixes, member prefixes instead of full keys. The gains compound with project size: larger APIs have more repeated structural tokens to eliminate.
 
 ### Ultra-compact example
 
