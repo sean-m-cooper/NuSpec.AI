@@ -122,8 +122,9 @@ public static class LicenseValidator
         {
             return null;
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is FormatException or OverflowException or ArgumentException)
         {
+            // Malformed JWT structure or claim parsing failures
             return null;
         }
     }
