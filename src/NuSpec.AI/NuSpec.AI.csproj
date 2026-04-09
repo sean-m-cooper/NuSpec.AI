@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <NoBuild>true</NoBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+
+    <!-- Package metadata -->
+    <PackageId>NuSpec.AI</PackageId>
+    <Version>1.0.0</Version>
+    <Description>Automatically generates ai/package-map.json during dotnet pack, providing AI coding assistants with structured metadata about your package's public API surface.</Description>
+    <Authors>Sean Cooper</Authors>
+    <PackageTags>AI;NuGet;documentation;metadata;Roslyn</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <DevelopmentDependency>true</DevelopmentDependency>
+  </PropertyGroup>
+
+  <!-- Include build assets (props/targets) -->
+  <ItemGroup>
+    <None Include="build\**" PackagePath="build\" Pack="true" />
+  </ItemGroup>
+
+  <!-- Include the published CLI tool (populated by build.sh / dotnet publish) -->
+  <ItemGroup>
+    <None Include="tools\net8.0\**" PackagePath="tools\net8.0\" Pack="true" />
+  </ItemGroup>
+
+</Project>

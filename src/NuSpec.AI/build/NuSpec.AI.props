@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <NuSpecAiEnabled Condition="'$(NuSpecAiEnabled)' == ''">true</NuSpecAiEnabled>
+  </PropertyGroup>
+</Project>
