@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using NuSpec.AI.Tool.Formats;
@@ -9,12 +8,6 @@ namespace NuSpec.AI.Tool.Analysis;
 
 public static class ProjectAnalyzer
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
-
     public static PackageMap Analyze(string csprojPath)
     {
         var projectDir = Path.GetDirectoryName(Path.GetFullPath(csprojPath))
@@ -32,11 +25,6 @@ public static class ProjectAnalyzer
             Dependencies = dependencies,
             PublicSurface = publicSurface
         };
-    }
-
-    public static string SerializeToJson(PackageMap packageMap)
-    {
-        return JsonSerializer.Serialize(packageMap, JsonOptions);
     }
 
     public static void WriteFormats(
