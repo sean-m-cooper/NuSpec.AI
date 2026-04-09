@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  test:
+    name: Build & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -16,20 +17,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: '8.0.x'
 
-      - name: Restore
+      - name: Restore dependencies
         run: dotnet restore NuSpec.AI.slnx
 
       - name: Build
-        run: dotnet build NuSpec.AI.slnx --no-restore -c Release
+        run: dotnet build NuSpec.AI.slnx -c Release --no-restore
 
       - name: Test
-        run: dotnet test NuSpec.AI.slnx --no-build -c Release --logger "trx;LogFileName=results.trx"
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: "**/*.trx"
+        run: dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj -c Release --no-build --logger "console;verbosity=normal"
