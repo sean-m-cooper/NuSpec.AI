@@ -19,7 +19,7 @@
 
   <!-- NuGet readme -->
   <ItemGroup>
-    <None Include="..\..\NUGET_README.md" PackagePath="README.md" Pack="true" />
+    <None Include="..\..\NUGET_README_PRO.md" PackagePath="README.md" Pack="true" />
   </ItemGroup>
 
   <!-- Pro build assets (props/targets evaluated by consuming project at pack time) -->

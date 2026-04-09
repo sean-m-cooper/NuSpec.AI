@@ -12,5 +12,11 @@
     <PackageTags>AI;NuGet;attributes;NuSpec.AI</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IsPackable>true</IsPackable>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\NUGET_README_ATTRIBUTES.md" PackagePath="README.md" Pack="true" />
+  </ItemGroup>
+
 </Project>
