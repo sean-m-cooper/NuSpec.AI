@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      Disable the free NuSpec.AI package. NuSpec.AI.props only sets NuSpecAiEnabled when
+      it is empty (Condition="'$(NuSpecAiEnabled)' == ''"). By setting it unconditionally
+      here, Pro takes over and the free package's targets never fire.
+    -->
+    <NuSpecAiEnabled>false</NuSpecAiEnabled>
+
+    <!-- Pro feature flag — consumer can set to false to disable Pro entirely -->
+    <NuSpecAiProEnabled Condition="'$(NuSpecAiProEnabled)' == ''">true</NuSpecAiProEnabled>
+
+    <!-- Default output format; consumer can override (e.g., json;yaml;ultra) -->
+    <NuSpecAiFormats Condition="'$(NuSpecAiFormats)' == ''">json</NuSpecAiFormats>
+  </PropertyGroup>
+</Project>

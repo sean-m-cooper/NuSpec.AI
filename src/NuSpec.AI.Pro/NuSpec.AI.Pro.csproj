@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <NoBuild>true</NoBuild>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+
+    <PackageId>NuSpec.AI.Pro</PackageId>
+    <Version>1.0.0</Version>
+    <Description>NuSpec.AI Pro — generates ai/package-map.json (plus YAML, compact, and ultra-compact variants) during dotnet pack using Roslyn. Requires a valid NuSpec.AI Pro license key. Gracefully coexists with the free NuSpec.AI package (Pro wins; free sits inert).</Description>
+    <Authors>Sean Cooper</Authors>
+    <PackageTags>AI;NuGet;documentation;metadata;Roslyn;Pro</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <!-- NuGet readme -->
+  <ItemGroup>
+    <None Include="..\..\NUGET_README.md" PackagePath="README.md" Pack="true" />
+  </ItemGroup>
+
+  <!-- Pro build assets (props/targets evaluated by consuming project at pack time) -->
+  <ItemGroup>
+    <None Include="build\**" PackagePath="build\" Pack="true" />
+  </ItemGroup>
+
+  <!--
+    CLI tool binary. Before packing, publish the tool:
+    dotnet publish src/NuSpec.AI.Tool -c Release -o src/NuSpec.AI.Pro/tools/net8.0
+  -->
+  <ItemGroup>
+    <None Include="tools\net8.0\**" PackagePath="tools\net8.0\" Pack="true" />
+  </ItemGroup>
+
+</Project>
