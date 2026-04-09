@@ -1,15 +1,18 @@
 using NuSpec.AI.Tool.Analysis;
+using NuSpec.AI.Tool.Formats;
 
 if (args.Length == 0 || args[0] is "--help" or "-h")
 {
     Console.WriteLine("Usage: NuSpec.AI.Tool <project-file> [options]");
     Console.WriteLine();
     Console.WriteLine("Arguments:");
-    Console.WriteLine("  project-file    Path to the .csproj file to analyze");
+    Console.WriteLine("  project-file         Path to the .csproj file to analyze");
     Console.WriteLine();
     Console.WriteLine("Options:");
-    Console.WriteLine("  --output <path>    Output file path (default: stdout)");
-    Console.WriteLine("  --help             Show help");
+    Console.WriteLine("  --output <path>      Output file path for single format (default: stdout)");
+    Console.WriteLine("  --output-dir <dir>   Output directory for multiple formats");
+    Console.WriteLine("  --formats <list>     Semicolon-separated formats: json, yaml, compact, ultra, all (default: json)");
+    Console.WriteLine("  --help               Show help");
     return args.Length == 0 ? 1 : 0;
 }
 
@@ -22,13 +25,17 @@ if (args[0] == "--version")
 
 var projectFile = args[0];
 string? outputPath = null;
+string? outputDir = null;
+string? formatsArg = null;
 
 for (int i = 1; i < args.Length; i++)
 {
     if (args[i] == "--output" && i + 1 < args.Length)
-    {
         outputPath = args[++i];
-    }
+    else if (args[i] == "--output-dir" && i + 1 < args.Length)
+        outputDir = args[++i];
+    else if (args[i] == "--formats" && i + 1 < args.Length)
+        formatsArg = args[++i];
 }
 
 if (!File.Exists(projectFile))
@@ -40,26 +47,35 @@ if (!File.Exists(projectFile))
 try
 {
     var packageMap = ProjectAnalyzer.Analyze(projectFile);
-    var json = ProjectAnalyzer.SerializeToJson(packageMap);
+    var formatters = FormatterRegistry.Resolve(formatsArg);
 
-    if (outputPath is not null)
+    if (outputDir is not null)
     {
-        var outputDir = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(outputDir))
-            Directory.CreateDirectory(outputDir);
-
-        File.WriteAllText(outputPath, json);
-        Console.Error.WriteLine($"Package map written to: {outputPath}");
+        ProjectAnalyzer.WriteFormats(packageMap, formatters, outputDir);
+    }
+    else if (outputPath is not null)
+    {
+        var formatter = formatters[0];
+        var dir = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(dir))
+            Directory.CreateDirectory(dir);
+        File.WriteAllText(outputPath, formatter.Serialize(packageMap));
+        Console.Error.WriteLine($"NuSpec.AI: Written {outputPath}");
     }
     else
     {
-        Console.WriteLine(json);
+        Console.WriteLine(formatters[0].Serialize(packageMap));
     }
 
     return 0;
 }
-catch (Exception ex)
+catch (ArgumentException ex)
 {
     Console.Error.WriteLine($"Error: {ex.Message}");
+    return 1;
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"Error analyzing project: {ex.Message}");
     return 1;
 }

@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using NuSpec.AI.Tool.Formats;
 using NuSpec.AI.Tool.Models;
 using NuSpec.AI.Tool.ProjectMetadata;
 
@@ -36,6 +37,20 @@ public static class ProjectAnalyzer
     public static string SerializeToJson(PackageMap packageMap)
     {
         return JsonSerializer.Serialize(packageMap, JsonOptions);
+    }
+
+    public static void WriteFormats(
+        PackageMap packageMap,
+        IReadOnlyList<IFormatter> formatters,
+        string outputDir)
+    {
+        Directory.CreateDirectory(outputDir);
+        foreach (var formatter in formatters)
+        {
+            var path = Path.Combine(outputDir, formatter.FileName);
+            File.WriteAllText(path, formatter.Serialize(packageMap));
+            Console.Error.WriteLine($"NuSpec.AI: Written {formatter.FileName}");
+        }
     }
 
     private static CSharpCompilation BuildCompilation(string projectDir, string assemblyName)
