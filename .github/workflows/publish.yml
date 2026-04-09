@@ -21,7 +21,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Restore
-        run: dotnet restore tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj
+        run: dotnet restore NuSpec.AI.slnx
 
       - name: Build & Test
         run: dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj -c Release
