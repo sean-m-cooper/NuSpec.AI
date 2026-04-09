@@ -19,6 +19,13 @@ public class ProLicenseIntegrationTests : IDisposable
 
     private const string PackageId = "Acme.TestLib";
 
+    // File names mirror the FileName property on each formatter.
+    // If a formatter's FileName changes, update the constant here too.
+    private const string FileNameJson        = "package-map.json";
+    private const string FileNameYaml        = "package-map.yaml";
+    private const string FileNameCompact     = "package-map.compact.json";
+    private const string FileNameUltra       = "package-map.ultra";
+
     public ProLicenseIntegrationTests()
     {
         var baseDir = Path.Combine(Path.GetTempPath(), "nuspecai-pro-test-" + Guid.NewGuid().ToString("N")[..8]);
@@ -65,6 +72,11 @@ public class ProLicenseIntegrationTests : IDisposable
     // Returns (exitLikeSuccess, stderrLines).
     // -------------------------------------------------------------------------
 
+    /// <remarks>
+    /// This helper intentionally mirrors the routing logic in <c>Program.cs</c>
+    /// (license validation → fallback to json + NSPECAI001 if unlicensed Pro formats requested).
+    /// If that logic changes, update this helper to match.
+    /// </remarks>
     private (bool success, List<string> stderrLines) RunPipeline(
         string? licenseArg,
         string formatsArg,
@@ -121,7 +133,7 @@ public class ProLicenseIntegrationTests : IDisposable
     }
 
     private IReadOnlyList<string> OutputFiles() =>
-        Directory.GetFiles(_outputDir).Select(Path.GetFileName).ToList()!;
+        Directory.GetFiles(_outputDir).Select(p => Path.GetFileName(p)!).ToList();
 
     // -------------------------------------------------------------------------
     // Test 1: Valid Pro license, formats=yaml;compact;ultra → 3 Pro files
@@ -136,10 +148,10 @@ public class ProLicenseIntegrationTests : IDisposable
 
         Assert.True(success);
         var files = OutputFiles();
-        Assert.DoesNotContain("package-map.json", files);
-        Assert.Contains("package-map.yaml", files);
-        Assert.Contains("package-map.compact.json", files);
-        Assert.Contains("package-map.ultra", files);
+        Assert.DoesNotContain(FileNameJson, files);
+        Assert.Contains(FileNameYaml, files);
+        Assert.Contains(FileNameCompact, files);
+        Assert.Contains(FileNameUltra, files);
         Assert.Equal(3, files.Count);
     }
 
@@ -156,10 +168,10 @@ public class ProLicenseIntegrationTests : IDisposable
 
         Assert.True(success);
         var files = OutputFiles();
-        Assert.Contains("package-map.json", files);
-        Assert.Contains("package-map.yaml", files);
-        Assert.Contains("package-map.compact.json", files);
-        Assert.Contains("package-map.ultra", files);
+        Assert.Contains(FileNameJson, files);
+        Assert.Contains(FileNameYaml, files);
+        Assert.Contains(FileNameCompact, files);
+        Assert.Contains(FileNameUltra, files);
         Assert.Equal(4, files.Count);
     }
 
@@ -176,7 +188,7 @@ public class ProLicenseIntegrationTests : IDisposable
 
         Assert.True(success);
         var files = OutputFiles();
-        Assert.Contains("package-map.json", files);
+        Assert.Contains(FileNameJson, files);
         Assert.Single(files);
     }
 
@@ -198,9 +210,9 @@ public class ProLicenseIntegrationTests : IDisposable
         // Should contain the Pro-active message
         Assert.Contains(stderrLines, line => line.Contains("NSPECAI002"));
         var files = OutputFiles();
-        Assert.Contains("package-map.yaml", files);
-        Assert.Contains("package-map.compact.json", files);
-        Assert.Contains("package-map.ultra", files);
+        Assert.Contains(FileNameYaml, files);
+        Assert.Contains(FileNameCompact, files);
+        Assert.Contains(FileNameUltra, files);
     }
 
     // -------------------------------------------------------------------------
@@ -222,10 +234,10 @@ public class ProLicenseIntegrationTests : IDisposable
         Assert.DoesNotContain(stderrLines, line => line.Contains("NSPECAI002"));
         // Only json output, no Pro formats
         var files = OutputFiles();
-        Assert.Contains("package-map.json", files);
-        Assert.DoesNotContain("package-map.yaml", files);
-        Assert.DoesNotContain("package-map.compact.json", files);
-        Assert.DoesNotContain("package-map.ultra", files);
+        Assert.Contains(FileNameJson, files);
+        Assert.DoesNotContain(FileNameYaml, files);
+        Assert.DoesNotContain(FileNameCompact, files);
+        Assert.DoesNotContain(FileNameUltra, files);
         Assert.Single(files);
     }
 }
