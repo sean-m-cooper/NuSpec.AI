@@ -9,13 +9,19 @@
 
     <!-- Package metadata -->
     <PackageId>NuSpec.AI</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Automatically generates ai/package-map.json during dotnet pack, providing AI coding assistants with structured metadata about your package's public API surface.</Description>
     <Authors>Sean Cooper</Authors>
     <PackageTags>AI;NuGet;documentation;metadata;Roslyn</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <DevelopmentDependency>true</DevelopmentDependency>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <!-- NuGet readme -->
+  <ItemGroup>
+    <None Include="..\..\NUGET_README.md" PackagePath="README.md" Pack="true" />
+  </ItemGroup>
 
   <!-- Include build assets (props/targets) -->
   <ItemGroup>
