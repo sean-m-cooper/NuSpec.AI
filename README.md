@@ -9,7 +9,7 @@ NuSpec.AI automatically generates a structured JSON map of your package's public
 1. Add the package:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="1.0.1" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="2.0.0" PrivateAssets="all" />
 ```
 
 2. Pack your project:
@@ -201,6 +201,33 @@ NuSpec.AI infers semantic roles for types using the Roslyn semantic model and na
 
 ## Configuration
 
+### Choosing output formats
+
+NuSpec.AI can emit the package map in multiple formats. Set `NuSpecAiFormats` in your `.csproj`:
+
+```xml
+<PropertyGroup>
+  <NuSpecAiFormats>json;yaml;ultra</NuSpecAiFormats>
+</PropertyGroup>
+```
+
+Available formats (all free and included):
+
+| Format    | File                        | Description                                            |
+|-----------|-----------------------------|--------------------------------------------------------|
+| `json`    | `ai/package-map.json`       | Standard JSON (default)                                |
+| `yaml`    | `ai/package-map.yaml`       | YAML — compact, human-readable                         |
+| `compact` | `ai/package-map.compact.json` | Minified JSON — smallest JSON form                   |
+| `ultra`   | `ai/package-map.ultra`      | Ultra-compact positional format — smallest token count |
+
+Special value `all` emits every format:
+
+```xml
+<PropertyGroup>
+  <NuSpecAiFormats>all</NuSpecAiFormats>
+</PropertyGroup>
+```
+
 ### Disabling Generation
 
 Set the `NuSpecAiEnabled` MSBuild property to `false`:
@@ -216,6 +243,31 @@ Or per-invocation:
 ```bash
 dotnet pack -p:NuSpecAiEnabled=false
 ```
+
+### Attributes
+
+NuSpec.AI ships three attributes (compiled into your assembly as `internal`) for fine-grained control:
+
+| Attribute                 | Purpose                                                                          |
+|---------------------------|----------------------------------------------------------------------------------|
+| `[AiRole("role1","role2")]` | Specify semantic roles explicitly, overriding inference                        |
+| `[AiIgnore]`              | Exclude a type or member from the package map                                    |
+| `[AiDescription("...")]`   | Provide AI-facing description that differs from the XML doc `<summary>`         |
+
+```csharp
+using NuSpec.AI;
+
+[AiRole("aggregate-root", "audited")]
+public class Order { /* ... */ }
+
+[AiIgnore]
+public class InternalHelper { /* ... */ }
+
+[AiDescription("High-volume event stream. Consumers must handle ordering.")]
+public interface IEventStream { /* ... */ }
+```
+
+Note: attribute recognition by the tool is planned; attribute *source* is included now so consumer code can be annotated in advance.
 
 ## Requirements
 
@@ -257,11 +309,15 @@ NuSpec.AI/
 │   │   │   └── CsprojReader.cs          # Reads package metadata from .csproj
 │   │   └── Program.cs                   # CLI entry point
 │   └── NuSpec.AI/                # NuGet packaging project
-│       └── build/
-│           ├── NuSpec.AI.props          # Default MSBuild properties
-│           └── NuSpec.AI.targets        # Pack hook: invokes CLI tool
+│       ├── build/
+│       │   ├── NuSpec.AI.props          # Default MSBuild properties
+│       │   └── NuSpec.AI.targets        # Pack hook: invokes CLI tool
+│       └── contentFiles/cs/any/NuSpec.AI/
+│           ├── AiRoleAttribute.cs       # Attributes compiled into consumer assembly
+│           ├── AiIgnoreAttribute.cs
+│           └── AiDescriptionAttribute.cs
 └── tests/
-    ├── NuSpec.AI.Tool.Tests/     # Unit tests (34 tests)
+    ├── NuSpec.AI.Tool.Tests/     # Unit and integration tests
     └── SampleProject/            # Integration test project
 ```
 

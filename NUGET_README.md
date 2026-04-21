@@ -9,7 +9,7 @@ NuSpec.AI automatically generates a structured JSON map of your package's public
 1. Add the package to your `.csproj`:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="1.0.1" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="2.0.0" PrivateAssets="all" />
 ```
 
 2. Pack your project:
@@ -165,6 +165,36 @@ The JSON captures only the **public API surface** — no method bodies, no priva
 For **NuGet package consumers**, the alternative to `package-map.json` isn't "read the source" — it's "have no structured API context at all." The AI would need to rely on IntelliSense hints, documentation websites, or asking you to explain the API. One JSON file replaces all of that with a complete, machine-readable API map.
 
 ## Configuration
+
+### Output formats
+
+All formats are free and included:
+
+```xml
+<PropertyGroup>
+  <NuSpecAiFormats>json;yaml;ultra</NuSpecAiFormats>
+</PropertyGroup>
+```
+
+| Format    | File                          | Description                         |
+|-----------|-------------------------------|-------------------------------------|
+| `json`    | `ai/package-map.json`         | Standard JSON (default)             |
+| `yaml`    | `ai/package-map.yaml`         | Compact, human-readable             |
+| `compact` | `ai/package-map.compact.json` | Minified JSON                       |
+| `ultra`   | `ai/package-map.ultra`        | Ultra-compact positional, smallest  |
+
+Use `all` to emit every format.
+
+### Attributes
+
+`[AiRole]`, `[AiIgnore]`, `[AiDescription]` ship as `internal` source compiled into your assembly:
+
+```csharp
+using NuSpec.AI;
+
+[AiRole("aggregate-root")]
+public class Order { }
+```
 
 ### Disabling generation
 
