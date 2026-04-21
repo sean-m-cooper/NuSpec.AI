@@ -9,6 +9,13 @@ namespace NuSpec.AI.Tool.Analysis;
 
 public static class ApiSurfaceCollector
 {
+    // Fully-qualified names of the attributes shipped as contentFiles by NuSpec.AI.
+    // We match by name rather than by type identity so the check works regardless
+    // of which assembly the attributes live in (each consumer gets its own internal copy).
+    private const string AiIgnoreAttributeName = "NuSpec.AI.AiIgnoreAttribute";
+    private const string AiRoleAttributeName = "NuSpec.AI.AiRoleAttribute";
+    private const string AiDescriptionAttributeName = "NuSpec.AI.AiDescriptionAttribute";
+
     private static readonly SymbolDisplayFormat SignatureFormat = new(
         globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
         typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
@@ -33,13 +40,14 @@ public static class ApiSurfaceCollector
         genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
         miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
-    public static PublicSurfaceInfo Collect(CSharpCompilation compilation)
+    public static PublicSurfaceInfo Collect(CSharpCompilation compilation, HashSet<SyntaxTree>? projectTrees = null)
     {
         var types = new List<TypeInfo>();
         var namespaces = new HashSet<string>();
 
-        // Build a set of syntax trees that belong to the project (not metadata references)
-        var projectTrees = new HashSet<SyntaxTree>(compilation.SyntaxTrees);
+        // Default: treat every syntax tree in the compilation as part of the project.
+        // ProjectAnalyzer passes an explicit set that excludes NuGet-sourced contentFiles.
+        projectTrees ??= new HashSet<SyntaxTree>(compilation.SyntaxTrees);
 
         CollectPublicTypes(compilation.GlobalNamespace, types, namespaces, projectTrees);
 
@@ -85,6 +93,10 @@ public static class ApiSurfaceCollector
                 .Any(r => projectTrees.Contains(r.SyntaxTree)))
             return;
 
+        // [AiIgnore] excludes the type entirely (and, by not recursing, any nested types)
+        if (HasAttribute(typeSymbol, AiIgnoreAttributeName))
+            return;
+
         var ns = typeSymbol.ContainingNamespace.IsGlobalNamespace
             ? string.Empty
             : typeSymbol.ContainingNamespace.ToDisplayString();
@@ -125,6 +137,9 @@ public static class ApiSurfaceCollector
                 if (member.IsImplicitlyDeclared)
                     continue;
 
+                if (HasAttribute(member, AiIgnoreAttributeName))
+                    continue;
+
                 var signature = member.HasConstantValue
                     ? $"{member.Name} = {member.ConstantValue}"
                     : member.Name;
@@ -146,6 +161,9 @@ public static class ApiSurfaceCollector
                 continue;
 
             if (!IsPublicMember(member, typeSymbol))
+                continue;
+
+            if (HasAttribute(member, AiIgnoreAttributeName))
                 continue;
 
             var memberInfo = member switch
@@ -231,6 +249,12 @@ public static class ApiSurfaceCollector
 
     private static IReadOnlyList<string> InferRoles(INamedTypeSymbol typeSymbol)
     {
+        // [AiRole(...)] replaces inference entirely. [AiRole] with no args means "no roles".
+        if (TryGetAiRoleOverride(typeSymbol, out var overrideRoles))
+        {
+            return overrideRoles;
+        }
+
         var roles = new List<string>();
 
         // Check for DbContext
@@ -317,6 +341,12 @@ public static class ApiSurfaceCollector
 
     private static string? ExtractDocumentation(ISymbol symbol)
     {
+        // [AiDescription("...")] always wins over XML doc summaries.
+        if (TryGetAiDescription(symbol, out var description))
+        {
+            return description;
+        }
+
         var xml = symbol.GetDocumentationCommentXml();
         if (string.IsNullOrWhiteSpace(xml))
             return null;
@@ -337,5 +367,96 @@ public static class ApiSurfaceCollector
         {
             return null;
         }
+    }
+
+    // --------------------------------------------------------------------
+    // Attribute helpers
+    //
+    // Attributes ship as contentFiles and are compiled into each consumer's
+    // assembly as internal types. We match by fully-qualified name so the
+    // lookup works regardless of which assembly the attribute lives in.
+    // --------------------------------------------------------------------
+
+    private static bool HasAttribute(ISymbol symbol, string attributeFullName)
+    {
+        foreach (var attr in symbol.GetAttributes())
+        {
+            if (IsAttributeNamed(attr, attributeFullName))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool IsAttributeNamed(AttributeData attr, string attributeFullName)
+    {
+        if (attr.AttributeClass is null)
+            return false;
+
+        var name = attr.AttributeClass.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            .Replace("global::", "");
+        return name == attributeFullName;
+    }
+
+    private static bool TryGetAiRoleOverride(ISymbol symbol, out IReadOnlyList<string> roles)
+    {
+        foreach (var attr in symbol.GetAttributes())
+        {
+            if (!IsAttributeNamed(attr, AiRoleAttributeName))
+                continue;
+
+            // Constructor is `params string[] roles` — Roslyn surfaces that as a single
+            // array constructor argument.
+            if (attr.ConstructorArguments.Length == 0)
+            {
+                roles = Array.Empty<string>();
+                return true;
+            }
+
+            var arg = attr.ConstructorArguments[0];
+            if (arg.Kind == TypedConstantKind.Array)
+            {
+                var values = arg.Values
+                    .Select(v => v.Value?.ToString())
+                    .Where(v => !string.IsNullOrEmpty(v))
+                    .Select(v => v!)
+                    .Distinct(StringComparer.Ordinal)
+                    .OrderBy(v => v, StringComparer.Ordinal)
+                    .ToList();
+                roles = values;
+                return true;
+            }
+
+            // Fallback: single-string form, shouldn't occur given the params signature.
+            if (arg.Value is string single && !string.IsNullOrEmpty(single))
+            {
+                roles = new[] { single };
+                return true;
+            }
+
+            roles = Array.Empty<string>();
+            return true;
+        }
+
+        roles = Array.Empty<string>();
+        return false;
+    }
+
+    private static bool TryGetAiDescription(ISymbol symbol, out string? description)
+    {
+        foreach (var attr in symbol.GetAttributes())
+        {
+            if (!IsAttributeNamed(attr, AiDescriptionAttributeName))
+                continue;
+
+            if (attr.ConstructorArguments.Length > 0 &&
+                attr.ConstructorArguments[0].Value is string value)
+            {
+                description = value;
+                return true;
+            }
+        }
+
+        description = null;
+        return false;
     }
 }

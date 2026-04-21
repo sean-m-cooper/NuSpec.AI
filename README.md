@@ -267,7 +267,10 @@ public class InternalHelper { /* ... */ }
 public interface IEventStream { /* ... */ }
 ```
 
-Note: attribute recognition by the tool is planned; attribute *source* is included now so consumer code can be annotated in advance.
+Semantics:
+- `[AiRole(...)]` replaces inferred roles with the explicit list. `[AiRole]` with no args disables inference (roles become empty).
+- `[AiIgnore]` on a type excludes it and all nested types. On a member, it excludes just that member.
+- `[AiDescription("...")]` always wins over the XML doc `<summary>`.
 
 ## Requirements
 

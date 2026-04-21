@@ -10,7 +10,10 @@ Output formats (consumer picks via `<NuSpecAiFormats>`):
 - `compact` — minified JSON
 - `ultra` — ultra-compact positional format, smallest token count
 
-Three opt-in attributes ship as `internal` source compiled into the consumer's assembly: `[AiRole]`, `[AiIgnore]`, `[AiDescription]`. These are for explicit control over the generated map. Attribute-honoring logic in the CLI tool is a planned enhancement — the attribute source ships now so consumer code can be annotated in advance.
+Three opt-in attributes ship as `internal` source compiled into the consumer's assembly: `[AiRole]`, `[AiIgnore]`, `[AiDescription]`. The CLI tool reads them during symbol analysis:
+- `[AiIgnore]` on a type or member excludes it (and, for types, any nested types) from the map
+- `[AiRole("role1", "role2")]` replaces inferred roles with the explicit list; `[AiRole]` with no args disables inference entirely
+- `[AiDescription("...")]` always wins over the XML doc `<summary>` when present
 
 ## Architecture
 
@@ -71,5 +74,4 @@ git push origin v2.x.x
 
 ## Planned Enhancements
 
-- Make the CLI tool honor `[AiRole]`, `[AiIgnore]`, and `[AiDescription]` attributes during symbol analysis (source exists, logic pending)
 - MSBuild property-based exclusions (`<NuSpecAiExcludeNamespaces>`, `<NuSpecAiExcludeTypes>`)
