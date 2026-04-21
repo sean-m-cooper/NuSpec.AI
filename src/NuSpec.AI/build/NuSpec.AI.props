@@ -1,5 +1,8 @@
 <Project>
   <PropertyGroup>
     <NuSpecAiEnabled Condition="'$(NuSpecAiEnabled)' == ''">true</NuSpecAiEnabled>
+
+    <!-- Default output format; consumers can override, e.g. <NuSpecAiFormats>json;yaml;ultra</NuSpecAiFormats> or 'all' -->
+    <NuSpecAiFormats Condition="'$(NuSpecAiFormats)' == ''">json</NuSpecAiFormats>
   </PropertyGroup>
 </Project>

@@ -1,30 +1,36 @@
 <Project>
   <PropertyGroup>
     <_NuSpecAiToolPath>$(MSBuildThisFileDirectory)..\tools\net8.0\NuSpec.AI.Tool.dll</_NuSpecAiToolPath>
-    <_NuSpecAiOutputDir>$(IntermediateOutputPath)nuspec-ai\</_NuSpecAiOutputDir>
-    <_NuSpecAiOutputFile>$(_NuSpecAiOutputDir)package-map.json</_NuSpecAiOutputFile>
+    <_NuSpecAiOutputDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)nuspec-ai'))</_NuSpecAiOutputDir>
+    <!-- Strip trailing slash so the quoted path doesn't become '\"' in shell invocation (Windows quirk) -->
+    <_NuSpecAiOutputDirForCli>$(_NuSpecAiOutputDir.TrimEnd('\').TrimEnd('/'))</_NuSpecAiOutputDirForCli>
   </PropertyGroup>
 
   <!-- Register our target as a content provider for NuGet pack -->
   <PropertyGroup Condition="'$(NuSpecAiEnabled)' == 'true' and '$(IsPackable)' != 'false'">
-    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);NuSpecAiIncludePackageMap</TargetsForTfmSpecificContentInPackage>
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);NuSpecAiIncludePackageMaps</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
 
-  <!-- Generate the package-map.json file -->
-  <Target Name="NuSpecAiGeneratePackageMap"
-          BeforeTargets="NuSpecAiIncludePackageMap"
+  <!-- Generate all requested format files before pack -->
+  <Target Name="NuSpecAiGeneratePackageMaps"
+          BeforeTargets="NuSpecAiIncludePackageMaps"
           Condition="'$(NuSpecAiEnabled)' == 'true' and '$(IsPackable)' != 'false'">
 
     <MakeDir Directories="$(_NuSpecAiOutputDir)" />
 
-    <Exec Command="dotnet &quot;$(_NuSpecAiToolPath)&quot; &quot;$(MSBuildProjectFullPath)&quot; --output &quot;$(_NuSpecAiOutputFile)&quot;" />
+    <Exec Command="dotnet &quot;$(_NuSpecAiToolPath)&quot; &quot;$(MSBuildProjectFullPath)&quot; --output &quot;$(_NuSpecAiOutputDirForCli)&quot; --formats &quot;$(NuSpecAiFormats)&quot;"
+          ConsoleToMSBuild="true" />
   </Target>
 
-  <!-- Add the generated file to the package -->
-  <Target Name="NuSpecAiIncludePackageMap">
+  <!-- Add each generated file to the .nupkg under ai/ -->
+  <Target Name="NuSpecAiIncludePackageMaps">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(_NuSpecAiOutputFile)">
-        <PackagePath>ai/package-map.json</PackagePath>
+      <_NuSpecAiGeneratedFiles Include="$(_NuSpecAiOutputDir)*" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="@(_NuSpecAiGeneratedFiles)">
+        <PackagePath>ai/%(Filename)%(Extension)</PackagePath>
       </TfmSpecificPackageFile>
     </ItemGroup>
   </Target>

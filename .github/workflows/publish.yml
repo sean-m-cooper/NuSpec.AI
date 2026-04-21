@@ -33,30 +33,12 @@ jobs:
           -o src/NuSpec.AI/tools/net8.0
           --no-self-contained
 
-      - name: Copy tool binary to NuSpec.AI.Pro
-        run: cp -r src/NuSpec.AI/tools/net8.0/. src/NuSpec.AI.Pro/tools/net8.0/
-
       - name: Pack NuSpec.AI
         run: >
           dotnet pack src/NuSpec.AI/NuSpec.AI.csproj
           -c Release
           -o artifacts
           --no-build
-          -p:Version=${{ steps.version.outputs.VERSION }}
-
-      - name: Pack NuSpec.AI.Pro
-        run: >
-          dotnet pack src/NuSpec.AI.Pro/NuSpec.AI.Pro.csproj
-          -c Release
-          -o artifacts
-          --no-build
-          -p:Version=${{ steps.version.outputs.VERSION }}
-
-      - name: Pack NuSpec.AI.Attributes
-        run: >
-          dotnet pack src/NuSpec.AI.Attributes/NuSpec.AI.Attributes.csproj
-          -c Release
-          -o artifacts
           -p:Version=${{ steps.version.outputs.VERSION }}
 
       - name: Push to NuGet
