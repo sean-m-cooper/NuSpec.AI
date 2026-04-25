@@ -141,9 +141,18 @@ It can recurse the same way through that map's own `packageReferences`. The resu
 
 ## Context Window Impact
 
-Across 24 production projects (3.5 MB of source), `package-map.json` averages **32% smaller than the source itself**, with savings of 60–84% typical for service- and logic-heavy projects. Model-heavy projects with hundreds of small DTOs see slightly larger output (the structural overhead dominates) — switch to `compact` or `ultra` and they shrink dramatically.
+A consumer's AI doesn't have your source. Its only structural alternative to NuSpec.AI is to **decompile your DLL** — which produces full method bodies, async state machines, backing fields, and compiler-generated artifacts. For a real-world project, NuSpec.AI's own ~50 KB CLI assembly:
 
-The real comparison isn't "JSON vs. source." A NuGet consumer's AI never had your source to begin with. NuSpec.AI replaces *no structured context at all* with a complete machine-readable API map — for any package size, that's a strict improvement.
+| Source for the AI                       | Bytes  | vs. decompilation |
+|-----------------------------------------|-------:|------------------:|
+| ILSpy-decompiled DLL                    | 52,919 | —                 |
+| `package-map.json`                      | 17,027 | **-68%**          |
+| `package-map.compact.json`              |  9,389 | **-82%**          |
+| `package-map.ultra`                     |  3,381 | **-94%**          |
+
+And decompiled output omits two things the AI needs most: **XML doc comments** (those live in a sibling `.xml` file that isn't always shipped to nuget.org) and **inferred semantic roles** (a decompiler has no notion of "this is a repository" or "this is a `DbContext`"). NuSpec.AI bundles both into the map directly.
+
+For the size of `package-map.json` itself: across 24 production projects (3.5 MB of source), it averages **32% smaller than the source code** with savings of 60–84% typical for service- and logic-heavy projects.
 
 ## Configuration
 
