@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using NuSpec.AI.Tool.Models;
 
 namespace NuSpec.AI.Tool.Analysis;
 
@@ -96,4 +97,93 @@ public static class XmlDocParser
     }
 
     private static string Normalize(string s) => WhitespaceRegex.Replace(s, " ").Trim();
+
+    public static DocsInfo? Parse(string xml, bool fullDocs)
+    {
+        if (string.IsNullOrWhiteSpace(xml)) return null;
+
+        XElement root;
+        try
+        {
+            root = XElement.Parse(xml, LoadOptions.PreserveWhitespace);
+        }
+        catch
+        {
+            return null;
+        }
+
+        var summary = ExtractElement(root, "summary");
+
+        if (!fullDocs)
+        {
+            return summary is null
+                ? null
+                : new DocsInfo { Summary = summary };
+        }
+
+        var typeparams = ExtractNamed(root, "typeparam");
+        var paramsMap = ExtractNamed(root, "param");
+        var returns = ExtractElement(root, "returns");
+        var remarks = ExtractElement(root, "remarks");
+        var example = ExtractElement(root, "example");
+        var exceptions = ExtractExceptions(root);
+
+        var docs = new DocsInfo
+        {
+            Summary = summary,
+            Params = paramsMap.Count > 0 ? paramsMap : null,
+            TypeParams = typeparams.Count > 0 ? typeparams : null,
+            Returns = returns,
+            Remarks = remarks,
+            Example = example,
+            Exceptions = exceptions.Count > 0 ? exceptions : null
+        };
+        return docs.IsEmpty ? null : docs;
+    }
+
+    private static string? ExtractElement(XElement root, string name)
+    {
+        var el = root.Element(name);
+        if (el is null) return null;
+        var text = ExtractInner(el);
+        return string.IsNullOrWhiteSpace(text) ? null : text;
+    }
+
+    private static Dictionary<string, string> ExtractNamed(XElement root, string name)
+    {
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var el in root.Elements(name))
+        {
+            var key = el.Attribute("name")?.Value;
+            if (string.IsNullOrEmpty(key)) continue;
+            var text = ExtractInner(el);
+            if (!string.IsNullOrWhiteSpace(text))
+                result[key] = text;
+        }
+        return result;
+    }
+
+    private static List<DocsExceptionInfo> ExtractExceptions(XElement root)
+    {
+        var result = new List<DocsExceptionInfo>();
+        foreach (var el in root.Elements("exception"))
+        {
+            var cref = el.Attribute("cref")?.Value;
+            if (string.IsNullOrEmpty(cref)) continue;
+            var when = ExtractInner(el);
+            result.Add(new DocsExceptionInfo
+            {
+                Type = StripCref(cref),
+                When = string.IsNullOrWhiteSpace(when) ? null : when
+            });
+        }
+        return result;
+    }
+
+    private static string ExtractInner(XElement el)
+    {
+        var sb = new StringBuilder();
+        AppendRewritten(el, sb);
+        return Normalize(sb.ToString());
+    }
 }
