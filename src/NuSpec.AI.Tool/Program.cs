@@ -16,6 +16,8 @@ if (args.Length == 0 || args[0] is "--help" or "-h")
     Console.WriteLine("  --output <dir>      Output directory (omit to write to stdout)");
     Console.WriteLine("  --formats <list>    Semicolon-separated format list: json;yaml;compact;ultra");
     Console.WriteLine("                      (or 'all' for every format; default: json)");
+    Console.WriteLine("  --full-docs         Capture <param>, <returns>, <remarks>, etc.");
+    Console.WriteLine("                      (default: only <summary>; increases map size)");
     Console.WriteLine("  --help              Show help");
     return args.Length == 0 ? 1 : 0;
 }
@@ -34,6 +36,7 @@ if (args[0] == "--version")
 var projectFile = args[0];
 string? outputDir = null;
 string? formatsArg = null;
+bool includeFullDocs = false;
 
 for (int i = 1; i < args.Length; i++)
 {
@@ -47,6 +50,9 @@ for (int i = 1; i < args.Length; i++)
             break;
         case "--formats" when i + 1 < args.Length:
             formatsArg = args[++i];
+            break;
+        case "--full-docs":
+            includeFullDocs = true;
             break;
     }
 }
@@ -63,7 +69,7 @@ if (!File.Exists(projectFile))
 
 try
 {
-    var packageMap = ProjectAnalyzer.Analyze(projectFile);
+    var packageMap = ProjectAnalyzer.Analyze(projectFile, includeFullDocs);
     var formatters = FormatterRegistry.Resolve(formatsArg ?? "json");
 
     if (outputDir is not null)

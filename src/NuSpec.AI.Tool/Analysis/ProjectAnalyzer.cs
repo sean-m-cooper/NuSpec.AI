@@ -8,7 +8,7 @@ namespace NuSpec.AI.Tool.Analysis;
 
 public static class ProjectAnalyzer
 {
-    public static PackageMap Analyze(string csprojPath)
+    public static PackageMap Analyze(string csprojPath, bool includeFullDocs = false)
     {
         var projectDir = Path.GetDirectoryName(Path.GetFullPath(csprojPath))
             ?? throw new InvalidOperationException($"Cannot determine directory for: {csprojPath}");
@@ -17,7 +17,7 @@ public static class ProjectAnalyzer
         var dependencies = DependencyResolver.Resolve(csprojPath);
 
         var (compilation, projectTrees) = BuildCompilation(projectDir, packageInfo.Id);
-        var publicSurface = ApiSurfaceCollector.Collect(compilation, projectTrees);
+        var publicSurface = ApiSurfaceCollector.Collect(compilation, projectTrees, includeFullDocs);
 
         return new PackageMap
         {
