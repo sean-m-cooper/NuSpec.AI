@@ -2,13 +2,13 @@
 
 ## What This Project Is
 
-NuSpec.AI is a NuGet package that automatically generates AI-friendly package maps during `dotnet pack`. Each map describes a package's public API surface — types, members, signatures, XML doc comments, and inferred semantic roles — so AI coding assistants get instant structured context about any package that includes it.
+NuSpec.AI is a NuGet package that automatically generates AI-friendly package maps during `dotnet pack`. Each map describes a package's public API surface (types, members, signatures, XML doc comments, and inferred semantic roles) so AI coding assistants get instant structured context about any package that includes it.
 
 Output formats (consumer picks via `<NuSpecAiFormats>`):
-- `json` — standard JSON (default, always available)
-- `yaml` — compact human-readable
-- `compact` — minified JSON
-- `ultra` — ultra-compact positional format, smallest token count
+- `json`: standard JSON (default, always available)
+- `yaml`: compact human-readable
+- `compact`: minified JSON
+- `ultra`: ultra-compact positional format, smallest token count
 
 Three opt-in attributes ship as `internal` source compiled into the consumer's assembly: `[AiRole]`, `[AiIgnore]`, `[AiDescription]`. The CLI tool reads them during symbol analysis:
 - `[AiIgnore]` on a type or member excludes it (and, for types, any nested types) from the map
@@ -17,23 +17,23 @@ Three opt-in attributes ship as `internal` source compiled into the consumer's a
 
 ## Architecture
 
-- **`src/NuSpec.AI.Tool/`** — .NET 8.0 console app (the CLI tool). Uses Roslyn's `CSharpCompilation` and symbol API to analyze C# projects in a single namespace walk. No syntax tree ancestor traversal — everything comes from `INamedTypeSymbol` directly. Contains `Formats/` with all four formatters (`JsonFormatter`, `YamlFormatter`, `CompactJsonFormatter`, `UltraCompactFormatter`).
-- **`src/NuSpec.AI/`** — Packaging-only project. Ships the CLI tool, MSBuild `.props`/`.targets`, and attribute `.cs` source files as a NuGet package. Not included in `dotnet build` (has `NoBuild=true`); only used for `dotnet pack`.
-  - `build/` — MSBuild integration that invokes the CLI tool during pack
-  - `contentFiles/cs/any/NuSpec.AI/` — `[AiRole]`, `[AiIgnore]`, `[AiDescription]` source files that NuGet compiles into each consumer's assembly
-  - `tools/net8.0/` — populated by `dotnet publish` of the CLI tool before `dotnet pack`
-- **`tests/NuSpec.AI.Tool.Tests/`** — xUnit tests. Tests use in-memory `CSharpCompilation` instances built from C# source strings — no fixture files on disk.
-- **`tests/SampleProject/`** — Integration test project that references NuSpec.AI locally to verify end-to-end `dotnet pack` behavior.
+- **`src/NuSpec.AI.Tool/`**: .NET 8.0 console app (the CLI tool). Uses Roslyn's `CSharpCompilation` and symbol API to analyze C# projects in a single namespace walk. No syntax tree ancestor traversal; everything comes from `INamedTypeSymbol` directly. Contains `Formats/` with all four formatters (`JsonFormatter`, `YamlFormatter`, `CompactJsonFormatter`, `UltraCompactFormatter`).
+- **`src/NuSpec.AI/`**: Packaging-only project. Ships the CLI tool, MSBuild `.props`/`.targets`, and attribute `.cs` source files as a NuGet package. Not included in `dotnet build` (has `NoBuild=true`); only used for `dotnet pack`.
+  - `build/`: MSBuild integration that invokes the CLI tool during pack
+  - `contentFiles/cs/any/NuSpec.AI/`: `[AiRole]`, `[AiIgnore]`, `[AiDescription]` source files that NuGet compiles into each consumer's assembly
+  - `tools/net8.0/`: populated by `dotnet publish` of the CLI tool before `dotnet pack`
+- **`tests/NuSpec.AI.Tool.Tests/`**: xUnit tests. Tests use in-memory `CSharpCompilation` instances built from C# source strings, with no fixture files on disk.
+- **`tests/SampleProject/`**: Integration test project that references NuSpec.AI locally to verify end-to-end `dotnet pack` behavior.
 
 ## Key Design Decisions
 
 - **Single package, all features free.** Previously a paid Pro tier and separate Attributes package existed; both were folded into the main NuSpec.AI package before open-sourcing. MIT licensed.
 - **Symbol-based analysis, not syntax walking.** `ApiSurfaceCollector` walks `compilation.GlobalNamespace` recursively. Partial classes merge automatically, base types are resolved, doc comments come from `GetDocumentationCommentXml()`, and role inference happens in the same pass.
 - **Filters to project sources only.** Types from metadata references (System.*, etc.) are excluded by checking `DeclaringSyntaxReferences` against the compilation's syntax trees.
-- **MSBuild integration uses `TargetsForTfmSpecificContentInPackage`.** This is the official NuGet SDK extensibility point. Earlier attempts with `None Pack="true"` and `_PackageFiles` added dynamically in targets did not work — items added in targets run too late for NuGet's static item collection.
+- **MSBuild integration uses `TargetsForTfmSpecificContentInPackage`.** This is the official NuGet SDK extensibility point. Earlier attempts with `None Pack="true"` and `_PackageFiles` added dynamically in targets did not work; items added in targets run too late for NuGet's static item collection.
 - **Attributes ship as source-only `contentFiles`.** They are `internal` to avoid type conflicts when multiple projects in a solution consume NuSpec.AI. Each consumer gets its own compiled copy.
 - **Transitive map discovery.** Each emitted `package-map.json` enriches its direct deps with resolved version and a `hasNuSpecAiMap` flag. AI tools resolve `<NuGet packages root>/<id-lower>/<version>/ai/package-map.json` to recurse. `DependencyResolver` orchestrates this at pack time using `CsprojReader` (declared refs) + `AssetsReader` (`obj/project.assets.json`) + filesystem probes.
-- **Opt-in full XML doc capture.** `<NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>` (or CLI `--full-docs`) emits a structured `docs` object on each type/member with `<param>`, `<typeparam>`, `<returns>`, `<remarks>`, `<example>`, `<exception>` text. Default off; the `documentation` summary field stays populated either way for back-compat. The `ultra` format ignores the flag by design. `XmlDocParser` owns parsing and inline-tag rewriting (`<see cref="T:..."/>` → bare name).
+- **Opt-in full XML doc capture.** `<NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>` (or CLI `--full-docs`) emits a structured `docs` object on each type/member with `<param>`, `<typeparam>`, `<returns>`, `<remarks>`, `<example>`, `<exception>` text. Default off; the `documentation` summary field stays populated either way for back-compat. The `ultra` format ignores the flag by design. `XmlDocParser` owns parsing and inline-tag rewriting (`<see cref="T:..."/>` becomes a bare name).
 
 ## Build Commands
 
@@ -53,8 +53,8 @@ dotnet run --project src/NuSpec.AI.Tool/NuSpec.AI.Tool.csproj -- path/to/Some.cs
 ## Version Management
 
 - Version is set in `src/NuSpec.AI/NuSpec.AI.csproj` (`<Version>`)
-- Also referenced in `README.md` and `NUGET_README.md` — update all three when bumping
-- GitHub Actions publish workflow extracts version from git tags (`v2.0.0` → `2.0.0`) and overrides the .csproj version
+- Also referenced in `README.md` and `NUGET_README.md`: update all three when bumping
+- GitHub Actions publish workflow extracts version from git tags (`v2.0.0` becomes `2.0.0`) and overrides the .csproj version
 
 ## Release Process
 
@@ -66,10 +66,14 @@ git tag v2.x.x
 git push origin v2.x.x
 ```
 
+## Writing Style
+
+- **Do not use the em-dash (`—`).** Replace it with appropriate punctuation: a comma for parenthetical asides, a colon for "X: Y" style explanations, a period for harder breaks, or parentheses for true asides. This applies to all documentation, commit messages, code comments, and PR descriptions in this repo.
+
 ## Conventions
 
 - Default output file is `ai/package-map.json` inside the .nupkg
-- `schemaVersion` in the JSON is `3` — increment on breaking schema changes
+- `schemaVersion` in the JSON is `3`; increment on breaking schema changes
 - Role inference is heuristic-based; a type can have multiple roles
 - `documentation` fields are omitted from JSON when no XML doc comment exists (not null)
 - `NUGET_README.md` is the consumer-facing readme for nuget.org; `README.md` is for GitHub

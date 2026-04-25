@@ -13,20 +13,20 @@
 ## File Structure
 
 **New files:**
-- `src/NuSpec.AI.Tool/Models/DocsInfo.cs` — model for the `docs` object
-- `src/NuSpec.AI.Tool/Analysis/XmlDocParser.cs` — XML doc parsing + inline-tag rewriting
-- `tests/NuSpec.AI.Tool.Tests/Analysis/XmlDocParserTests.cs` — unit tests for the parser
+- `src/NuSpec.AI.Tool/Models/DocsInfo.cs`: model for the `docs` object
+- `src/NuSpec.AI.Tool/Analysis/XmlDocParser.cs`: XML doc parsing + inline-tag rewriting
+- `tests/NuSpec.AI.Tool.Tests/Analysis/XmlDocParserTests.cs`: unit tests for the parser
 
 **Modified files:**
-- `src/NuSpec.AI.Tool/Models/MemberInfo.cs` — add optional `Docs` property
-- `src/NuSpec.AI.Tool/Models/TypeInfo.cs` — add optional `Docs` property
-- `src/NuSpec.AI.Tool/Models/PackageMap.cs` — bump default `SchemaVersion` from 2 → 3
-- `src/NuSpec.AI.Tool/Analysis/ApiSurfaceCollector.cs` — accept `includeFullDocs`, delegate to `XmlDocParser`
-- `src/NuSpec.AI.Tool/Analysis/ProjectAnalyzer.cs` — accept and forward `includeFullDocs`
-- `src/NuSpec.AI.Tool/Program.cs` — parse `--full-docs` flag
-- `src/NuSpec.AI/build/NuSpec.AI.targets` — pass `NuSpecAiIncludeFullDocs` to CLI
-- `src/NuSpec.AI/NuSpec.AI.csproj` — bump `<Version>` to 3.1.0
-- `README.md`, `NUGET_README.md`, `CLAUDE.md` — document the new feature
+- `src/NuSpec.AI.Tool/Models/MemberInfo.cs`: add optional `Docs` property
+- `src/NuSpec.AI.Tool/Models/TypeInfo.cs`: add optional `Docs` property
+- `src/NuSpec.AI.Tool/Models/PackageMap.cs`: bump default `SchemaVersion` from 2 to 3
+- `src/NuSpec.AI.Tool/Analysis/ApiSurfaceCollector.cs`: accept `includeFullDocs`, delegate to `XmlDocParser`
+- `src/NuSpec.AI.Tool/Analysis/ProjectAnalyzer.cs`: accept and forward `includeFullDocs`
+- `src/NuSpec.AI.Tool/Program.cs`: parse `--full-docs` flag
+- `src/NuSpec.AI/build/NuSpec.AI.targets`: pass `NuSpecAiIncludeFullDocs` to CLI
+- `src/NuSpec.AI/NuSpec.AI.csproj`: bump `<Version>` to 3.1.0
+- `README.md`, `NUGET_README.md`, `CLAUDE.md`: document the new feature
 - Existing tests asserting `SchemaVersion == 2` → update to 3
 
 ---
@@ -112,7 +112,7 @@ git commit -m "feat(model): add DocsInfo for richer XML doc capture (v3.1 schema
 
 ---
 
-## Task 2: XmlDocParser — `<see>` / `<paramref>` rewriting
+## Task 2: XmlDocParser: `<see>` / `<paramref>` rewriting
 
 **Files:**
 - Create: `src/NuSpec.AI.Tool/Analysis/XmlDocParser.cs`
@@ -311,7 +311,7 @@ git commit -m "feat(parser): XmlDocParser inline tag rewriting (see/paramref/typ
 
 ---
 
-## Task 3: XmlDocParser — Parse method
+## Task 3: XmlDocParser: Parse method
 
 **Files:**
 - Modify: `src/NuSpec.AI.Tool/Analysis/XmlDocParser.cs`
@@ -552,7 +552,7 @@ Same addition in `TypeInfo.cs`, after `Documentation`.
 
 In `ApiSurfaceCollector.cs`, find `ExtractDocumentation` and replace it. Then update both call sites (type and member) to also extract and attach a `DocsInfo`.
 
-The collector needs the `includeFullDocs` flag. Thread it through the constructor or as a method parameter — pick whichever matches the existing pattern. (Inspect the file; if the collector is currently static, add an instance with a constructor field; if already instance-based, add a constructor param. Show the actual diff in commit.)
+The collector needs the `includeFullDocs` flag. Thread it through the constructor or as a method parameter; pick whichever matches the existing pattern. (Inspect the file; if the collector is currently static, add an instance with a constructor field; if already instance-based, add a constructor param. Show the actual diff in commit.)
 
 Replacement for `ExtractDocumentation`:
 
@@ -575,12 +575,12 @@ private DocsInfo? ExtractDocs(ISymbol symbol)
 }
 ```
 
-When `[AiDescription]` is set, `Documentation` carries the override but `Docs` still gets populated from XML (per the spec — attribute overrides the user-facing summary, structured fields stay). At each TypeInfo and MemberInfo construction site, set `Docs = ExtractDocs(symbol)`.
+When `[AiDescription]` is set, `Documentation` carries the override but `Docs` still gets populated from XML (per the spec: attribute overrides the user-facing summary, structured fields stay). At each TypeInfo and MemberInfo construction site, set `Docs = ExtractDocs(symbol)`.
 
 - [ ] **Step 4: Run existing tests**
 
 Run: `dotnet test`
-Expected: all existing tests PASS (no behavior change because `_includeFullDocs` defaults to false where unset; current callers haven't been updated yet — they pass false implicitly).
+Expected: all existing tests PASS (no behavior change because `_includeFullDocs` defaults to false where unset; current callers haven't been updated yet, so they pass false implicitly).
 
 - [ ] **Step 5: Commit**
 
@@ -596,7 +596,7 @@ git commit -m "feat(collector): delegate XML doc parsing to XmlDocParser, add Do
 **Files:**
 - Modify: `src/NuSpec.AI.Tool/Analysis/ProjectAnalyzer.cs`
 - Modify: `src/NuSpec.AI.Tool/Program.cs`
-- Modify: `tests/NuSpec.AI.Tool.Tests/Analysis/ApiSurfaceCollectorTests.cs` (or wherever full-stack collector tests live — add one)
+- Modify: `tests/NuSpec.AI.Tool.Tests/Analysis/ApiSurfaceCollectorTests.cs` (or wherever full-stack collector tests live; add one)
 
 - [ ] **Step 1: Write the failing integration test**
 
@@ -806,7 +806,7 @@ Expect the map to grow ~1.6–2× when enabled, depending on how much `<param>` 
 
 - [ ] **Step 4: Update README.md schema reference**
 
-In the schema-reference section of `README.md`, document the new `docs` object — mirror the spec's table of fields. Update schemaVersion example output to `3`.
+In the schema-reference section of `README.md`, document the new `docs` object: mirror the spec's table of fields. Update schemaVersion example output to `3`.
 
 - [ ] **Step 5: Update CLAUDE.md**
 
@@ -828,7 +828,7 @@ git commit -m "release: v3.1.0 — opt-in capture of full XML doc comments"
 
 ## Task 9: Real-world verification
 
-**Files:** none — verification only.
+**Files:** none; verification only.
 
 - [ ] **Step 1: Re-pack Newtonsoft.Json with `--full-docs`**
 
@@ -841,7 +841,7 @@ Using the same local-feed setup used during planning (NuSpec.AI 3.1.0 in `/tmp/l
 
 - [ ] **Step 2: Compare ultra format**
 
-Confirm `package-map.ultra` size is unchanged (within rounding) regardless of the property — proving the format ignores `--full-docs`.
+Confirm `package-map.ultra` size is unchanged (within rounding) regardless of the property, proving the format ignores `--full-docs`.
 
 - [ ] **Step 3: Record numbers**
 

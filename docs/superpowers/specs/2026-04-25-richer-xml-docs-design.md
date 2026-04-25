@@ -1,8 +1,8 @@
-# Richer XML Doc Capture (v3.1) — Design
+# Richer XML Doc Capture (v3.1): Design
 
 ## Goal
 
-Surface the `<param>`, `<typeparam>`, `<returns>`, `<remarks>`, `<example>`, and `<exception>` elements from XML doc comments into the package map, so AI consumers receive the same structured guidance a human IntelliSense user gets — not just the one-line summary NuSpec.AI captures today.
+Surface the `<param>`, `<typeparam>`, `<returns>`, `<remarks>`, `<example>`, and `<exception>` elements from XML doc comments into the package map, so AI consumers receive the same structured guidance a human IntelliSense user gets, not just the one-line summary NuSpec.AI captures today.
 
 ## Motivation
 
@@ -43,7 +43,7 @@ All fields optional; emitted only when present in the source XML.
 | `example` | string | `<example>` |
 | `exceptions` | array of `{ type, when }` | one entry per `<exception cref="T:...">` |
 
-### `documentation` field — unchanged behavior
+### `documentation` field: unchanged behavior
 
 Stays as the bare summary text, no nested objects, no breaking change. Existing consumers reading only this field see no difference.
 
@@ -71,7 +71,7 @@ New MSBuild property, opt-in:
 
 Default: `false`. When `false`, the map looks identical to v3.0 output. When `true`, every `docs` object that has at least one field gets emitted. Empty `docs` objects (e.g., a method with only a `<summary>`) are omitted entirely.
 
-The CLI gains a matching flag: `--full-docs` (boolean), threaded through `Program.cs` → `ProjectAnalyzer.Analyze`.
+The CLI gains a matching flag: `--full-docs` (boolean), threaded through `Program.cs` to `ProjectAnalyzer.Analyze`.
 
 ## Format support
 
@@ -80,11 +80,11 @@ The CLI gains a matching flag: `--full-docs` (boolean), threaded through `Progra
 
 ## Schema version
 
-Bump `schemaVersion` from `2` to `3`. The `docs` object is additive — v2 consumers ignoring unknown fields keep working — but the bump is a clean signal for AI tooling that wants to opt into reading the new fields.
+Bump `schemaVersion` from `2` to `3`. The `docs` object is additive (v2 consumers ignoring unknown fields keep working), but the bump is a clean signal for AI tooling that wants to opt into reading the new fields.
 
 ## Size impact
 
-Estimate (Newtonsoft.Json, with `--full-docs`): map roughly 1.6–2.0× current size. EF Core: similar ratio, so ~7–8 MB raw / ~1.7 MB inside `.nupkg`. Opt-in is the right default for that reason — packages picking ultra or compact for size already won't see the bump.
+Estimate (Newtonsoft.Json, with `--full-docs`): map roughly 1.6–2.0× current size. EF Core: similar ratio, so ~7–8 MB raw / ~1.7 MB inside `.nupkg`. Opt-in is the right default for that reason: packages picking ultra or compact for size already won't see the bump.
 
 ## Testing
 
@@ -99,7 +99,7 @@ Three layers:
 ## Open questions (decided)
 
 - **`<see href="..."/>` external links?** Drop the tag, keep the inner text or the URL. Implementation pick: keep the inner text if present, else the URL. Low priority; covered in implementation.
-- **Inheritance via `<inheritdoc/>`?** Roslyn's `GetDocumentationCommentXml(expandIncludes: true)` — but inheritdoc resolution is hard to do correctly with multiple inheritance paths. Out of scope for v3.1; current behavior (literal `<inheritdoc/>` shows up as empty) is preserved. Document this as a known limitation.
+- **Inheritance via `<inheritdoc/>`?** Roslyn's `GetDocumentationCommentXml(expandIncludes: true)`, but inheritdoc resolution is hard to do correctly with multiple inheritance paths. Out of scope for v3.1; current behavior (literal `<inheritdoc/>` shows up as empty) is preserved. Document this as a known limitation.
 - **CDATA blocks in `<example>`?** Strip the wrapper, keep the contents. Already implicit in `XElement.Value`.
 
 ## Out of scope
@@ -111,16 +111,16 @@ Three layers:
 
 ## Files affected
 
-- `src/NuSpec.AI.Tool/Models/MemberInfo.cs` — add `Docs` property.
-- `src/NuSpec.AI.Tool/Models/TypeInfo.cs` — add `Docs` property.
-- `src/NuSpec.AI.Tool/Models/DocsInfo.cs` — **new** model class.
-- `src/NuSpec.AI.Tool/Analysis/XmlDocParser.cs` — **new**, single home for XML→DocsInfo parsing and inline-tag rewriting (extract from inline code in `ApiSurfaceCollector`).
-- `src/NuSpec.AI.Tool/Analysis/ApiSurfaceCollector.cs` — call `XmlDocParser` instead of inline summary-only logic.
-- `src/NuSpec.AI.Tool/Analysis/ProjectAnalyzer.cs` — accept `includeFullDocs` parameter, plumb to collector.
-- `src/NuSpec.AI.Tool/Program.cs` — add `--full-docs` flag.
-- `src/NuSpec.AI/build/NuSpec.AI.targets` — pass `NuSpecAiIncludeFullDocs` MSBuild property to the CLI.
-- `src/NuSpec.AI.Tool/Formats/UltraCompactFormatter.cs` — comment confirming it ignores `docs`.
-- `src/NuSpec.AI/NuSpec.AI.csproj` — bump `<Version>` to `3.1.0`.
+- `src/NuSpec.AI.Tool/Models/MemberInfo.cs`: add `Docs` property.
+- `src/NuSpec.AI.Tool/Models/TypeInfo.cs`: add `Docs` property.
+- `src/NuSpec.AI.Tool/Models/DocsInfo.cs`: **new** model class.
+- `src/NuSpec.AI.Tool/Analysis/XmlDocParser.cs`: **new**, single home for XML→DocsInfo parsing and inline-tag rewriting (extract from inline code in `ApiSurfaceCollector`).
+- `src/NuSpec.AI.Tool/Analysis/ApiSurfaceCollector.cs`: call `XmlDocParser` instead of inline summary-only logic.
+- `src/NuSpec.AI.Tool/Analysis/ProjectAnalyzer.cs`: accept `includeFullDocs` parameter, plumb to collector.
+- `src/NuSpec.AI.Tool/Program.cs`: add `--full-docs` flag.
+- `src/NuSpec.AI/build/NuSpec.AI.targets`: pass `NuSpecAiIncludeFullDocs` MSBuild property to the CLI.
+- `src/NuSpec.AI.Tool/Formats/UltraCompactFormatter.cs`: comment confirming it ignores `docs`.
+- `src/NuSpec.AI/NuSpec.AI.csproj`: bump `<Version>` to `3.1.0`.
 - Schema bump in `PackageMap.cs` constant from 2 → 3.
 - Tests under `tests/NuSpec.AI.Tool.Tests/`.
-- `README.md`, `NUGET_README.md`, `CLAUDE.md` — document the new property and flag, update version references.
+- `README.md`, `NUGET_README.md`, `CLAUDE.md`: document the new property and flag, update version references.

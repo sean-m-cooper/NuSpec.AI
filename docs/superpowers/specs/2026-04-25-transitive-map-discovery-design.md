@@ -1,4 +1,4 @@
-# Transitive Map Discovery — Design
+# Transitive Map Discovery: Design
 
 **Status:** Draft
 **Date:** 2026-04-25
@@ -6,7 +6,7 @@
 
 ## Problem
 
-When a NuGet package `B` depends on package `A`, and both packages use NuSpec.AI, an AI assistant working on a project that consumes `B` cannot easily discover or read the package map for `A`. Today each package's `.nupkg` contains its own `ai/package-map.json`, but those maps stand in isolation — there is no link from `B`'s map to `A`'s map.
+When a NuGet package `B` depends on package `A`, and both packages use NuSpec.AI, an AI assistant working on a project that consumes `B` cannot easily discover or read the package map for `A`. Today each package's `.nupkg` contains its own `ai/package-map.json`, but those maps stand in isolation: there is no link from `B`'s map to `A`'s map.
 
 The result: an AI helping with code that uses `B` sees that `B.OrderRepository.GetById(...)` returns an `Acme.OrdersCore.Order`, but has no structured way to find the package map for `Acme.OrdersCore` and learn what `Order` looks like.
 
@@ -114,9 +114,9 @@ If the assets file is missing, return refs with `Version = null` and `HasNuSpecA
 
 All four formatters need to emit the new shape:
 
-- **`JsonFormatter`** and **`CompactJsonFormatter`** — System.Text.Json serializes the object array automatically once the model changes.
-- **`YamlFormatter`** — YamlDotNet serializes objects natively.
-- **`UltraCompactFormatter`** — needs a positional convention for the dep object. Match the existing ultra style; e.g., `id|version|1` per dep where the trailing field is `1`/`0` for the map flag. Exact convention chosen during implementation to match the rest of the ultra format.
+- **`JsonFormatter`** and **`CompactJsonFormatter`**: System.Text.Json serializes the object array automatically once the model changes.
+- **`YamlFormatter`**: YamlDotNet serializes objects natively.
+- **`UltraCompactFormatter`**: needs a positional convention for the dep object. Match the existing ultra style; e.g., `id|version|1` per dep where the trailing field is `1`/`0` for the map flag. Exact convention chosen during implementation to match the rest of the ultra format.
 
 ## Edge cases
 
@@ -133,30 +133,30 @@ All four formatters need to emit the new shape:
 
 ## Testing
 
-Unit, schema/serialization, and integration coverage. All test compilations follow the existing pattern of building source from in-memory strings — no fixture files on disk.
+Unit, schema/serialization, and integration coverage. All test compilations follow the existing pattern of building source from in-memory strings, with no fixture files on disk.
 
-### Unit tests — `DependencyResolverTests.cs`
+### Unit tests: `DependencyResolverTests.cs`
 
-- `Resolves_DirectRef_ResolvedVersion_FromAssetsJson` — given a fake assets JSON string and a list of declared refs, returns the resolved version per ref.
-- `MissingAssetsJson_ReturnsRefsWithNullVersion` — graceful degradation when restore hasn't run.
-- `PrivateAssetsAll_RefIsExcluded` — preserves existing semantics.
-- `HasMap_TrueWhenFileExists` — uses a temp directory acting as a fake NuGet cache.
+- `Resolves_DirectRef_ResolvedVersion_FromAssetsJson`: given a fake assets JSON string and a list of declared refs, returns the resolved version per ref.
+- `MissingAssetsJson_ReturnsRefsWithNullVersion`: graceful degradation when restore hasn't run.
+- `PrivateAssetsAll_RefIsExcluded`: preserves existing semantics.
+- `HasMap_TrueWhenFileExists`: uses a temp directory acting as a fake NuGet cache.
 - `HasMap_FalseWhenFileMissing`.
-- `LowercasesIdSegment_ForCachePath` — explicitly tests the case-folding behavior.
+- `LowercasesIdSegment_ForCachePath`: explicitly tests the case-folding behavior.
 - `FloatingVersion_UsesResolvedConcreteVersion`.
 - `MultiplePackageFolders_FirstMatchWins`.
 
 ### Schema/serialization tests
 
 - `SchemaVersion_Is_2`.
-- `Json_DependencyReference_SerializesAsObject` — assert against an expected JSON snippet.
-- `UltraCompact_DependencyReference_UsesPositionalForm` — assert against the new ultra layout.
+- `Json_DependencyReference_SerializesAsObject`: assert against an expected JSON snippet.
+- `UltraCompact_DependencyReference_UsesPositionalForm`: assert against the new ultra layout.
 - `Yaml_DependencyReference_SerializesAsObject`.
 - `CompactJson_DependencyReference_SerializesAsObject`.
 
 ### Integration test
 
-Extend `tests/SampleProject/` coverage — or add a `tests/SampleConsumer/` project that references `SampleProject` via a local source. Run `dotnet pack` and assert the emitted `ai/package-map.json` contains a `packageReferences` entry for `SampleProject` with `hasNuSpecAiMap: true` and the resolved version.
+Extend `tests/SampleProject/` coverage, or add a `tests/SampleConsumer/` project that references `SampleProject` via a local source. Run `dotnet pack` and assert the emitted `ai/package-map.json` contains a `packageReferences` entry for `SampleProject` with `hasNuSpecAiMap: true` and the resolved version.
 
 If wiring up a second sample project proves heavy, a CLI-level integration test that builds an in-memory compilation against a fake on-disk NuGet cache structure is an acceptable substitute.
 
@@ -176,7 +176,7 @@ One unit-level test simulating the AI walk: given B's emitted JSON pointing at A
 ### `NUGET_README.md`
 
 - Same `schemaVersion` and example-snippet updates.
-- Keep consumer-facing readme short — no full schema reference.
+- Keep consumer-facing readme short; no full schema reference.
 
 ### `CLAUDE.md`
 

@@ -2,7 +2,7 @@
 
 **Give AI coding assistants instant context about your NuGet package.**
 
-NuSpec.AI automatically generates a structured JSON map of your package's public API surface — types, members, signatures, documentation, and inferred roles — and embeds it in your `.nupkg` during `dotnet pack`. AI tools can read this file to understand your package without reflection, decompilation, or guesswork.
+NuSpec.AI automatically generates a structured JSON map of your package's public API surface (types, members, signatures, documentation, and inferred roles) and embeds it in your `.nupkg` during `dotnet pack`. AI tools can read this file to understand your package without reflection, decompilation, or guesswork.
 
 ## Quick Start
 
@@ -123,7 +123,7 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 
 ## How It Works
 
-NuSpec.AI is a **development dependency** — it hooks into `dotnet pack` via MSBuild targets and does not ship as a runtime dependency of your package.
+NuSpec.AI is a **development dependency**: it hooks into `dotnet pack` via MSBuild targets and does not ship as a runtime dependency of your package.
 
 1. During pack, the MSBuild `.targets` file invokes the **NuSpec.AI CLI tool**
 2. The CLI tool parses your project's `.cs` files using **Roslyn** and builds a `CSharpCompilation` with a semantic model
@@ -135,10 +135,10 @@ NuSpec.AI is a **development dependency** — it hooks into `dotnet pack` via MS
 
 NuSpec.AI goes beyond syntax parsing. By creating a Roslyn `CSharpCompilation`, it can:
 
-- **Resolve type hierarchies** — know that `OrdersContext` inherits from `DbContext`
-- **Detect interface implementations** — recognize repository patterns even when the class name doesn't match
-- **Merge partial classes** — automatically combine partial declarations into a single type entry
-- **Format signatures accurately** — use `ISymbol.ToDisplayString()` for correct generic type representations
+- **Resolve type hierarchies**: know that `OrdersContext` inherits from `DbContext`
+- **Detect interface implementations**: recognize repository patterns even when the class name doesn't match
+- **Merge partial classes**: automatically combine partial declarations into a single type entry
+- **Format signatures accurately**: use `ISymbol.ToDisplayString()` for correct generic type representations
 
 ## Transitive Map Discovery
 
@@ -148,7 +148,7 @@ Each emitted `package-map.json` lists its direct package dependencies along with
 <NuGet packages root>/<A.id-lowercase>/<A.version>/ai/package-map.json
 ```
 
-The NuGet packages root is `~/.nuget/packages` on macOS/Linux and `%USERPROFILE%\.nuget\packages` on Windows by default; it can be overridden via the `NUGET_PACKAGES` environment variable or the `globalPackagesFolder` setting in `nuget.config`. Tools that read `obj/project.assets.json` (preferred) get the canonical `packageFolders` list directly — iterate them in order; the first match wins.
+The NuGet packages root is `~/.nuget/packages` on macOS/Linux and `%USERPROFILE%\.nuget\packages` on Windows by default; it can be overridden via the `NUGET_PACKAGES` environment variable or the `globalPackagesFolder` setting in `nuget.config`. Tools that read `obj/project.assets.json` (preferred) get the canonical `packageFolders` list directly; iterate them in order, and the first match wins.
 
 To traverse the full dependency tree, recurse into each found map's own `packageReferences` entries.
 
@@ -260,9 +260,9 @@ Available formats (all free and included):
 | Format    | File                        | Description                                            |
 |-----------|-----------------------------|--------------------------------------------------------|
 | `json`    | `ai/package-map.json`       | Standard JSON (default)                                |
-| `yaml`    | `ai/package-map.yaml`       | YAML — compact, human-readable                         |
-| `compact` | `ai/package-map.compact.json` | Minified JSON — smallest JSON form                   |
-| `ultra`   | `ai/package-map.ultra`      | Ultra-compact positional format — smallest token count |
+| `yaml`    | `ai/package-map.yaml`       | YAML: compact, human-readable                          |
+| `compact` | `ai/package-map.compact.json` | Minified JSON: smallest JSON form                    |
+| `ultra`   | `ai/package-map.ultra`      | Ultra-compact positional format: smallest token count  |
 
 Special value `all` emits every format:
 
