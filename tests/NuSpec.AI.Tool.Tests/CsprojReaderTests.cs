@@ -137,64 +137,6 @@ public class CsprojReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadsPackageReferences()
-    {
-        var path = WriteCsproj("""
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <TargetFramework>net8.0</TargetFramework>
-              </PropertyGroup>
-              <ItemGroup>
-                <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                <PackageReference Include="Serilog" Version="3.0.0" />
-              </ItemGroup>
-            </Project>
-            """);
-
-        var deps = CsprojReader.ReadDependencies(path);
-        Assert.Equal(new[] { "Newtonsoft.Json", "Serilog" }, deps.PackageReferences.Select(p => p.Id).ToArray());
-    }
-
-    [Fact]
-    public void ExcludesPrivateAssetsAll()
-    {
-        var path = WriteCsproj("""
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <TargetFramework>net8.0</TargetFramework>
-              </PropertyGroup>
-              <ItemGroup>
-                <PackageReference Include="Visible.Package" Version="1.0.0" />
-                <PackageReference Include="Hidden.Package" Version="1.0.0" PrivateAssets="all" />
-              </ItemGroup>
-            </Project>
-            """);
-
-        var deps = CsprojReader.ReadDependencies(path);
-        Assert.Single(deps.PackageReferences);
-        Assert.Equal("Visible.Package", deps.PackageReferences[0].Id);
-    }
-
-    [Fact]
-    public void ReadsFrameworkReferences()
-    {
-        var path = WriteCsproj("""
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <TargetFramework>net8.0</TargetFramework>
-              </PropertyGroup>
-              <ItemGroup>
-                <FrameworkReference Include="Microsoft.AspNetCore.App" />
-              </ItemGroup>
-            </Project>
-            """);
-
-        var deps = CsprojReader.ReadDependencies(path);
-        Assert.Single(deps.FrameworkReferences);
-        Assert.Equal("Microsoft.AspNetCore.App", deps.FrameworkReferences[0]);
-    }
-
-    [Fact]
     public void ReadDeclaredPackageReferences_ReturnsIdAndPrivateAssetsFlag()
     {
         var path = WriteCsproj("""

@@ -86,47 +86,6 @@ public static class CsprojReader
             .ToList();
     }
 
-    public static DependencyInfo ReadDependencies(string csprojPath)
-    {
-        var doc = XDocument.Load(csprojPath);
-        var ns = doc.Root?.Name.Namespace ?? XNamespace.None;
-
-        var packageRefs = doc.Descendants(ns + "PackageReference")
-            .Where(el =>
-            {
-                var privateAssets = el.Attribute("PrivateAssets")?.Value
-                    ?? el.Element(ns + "PrivateAssets")?.Value;
-                return !string.Equals(privateAssets, "all", StringComparison.OrdinalIgnoreCase);
-            })
-            .Select(el => el.Attribute("Include")?.Value ?? "")
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct()
-            .OrderBy(name => name)
-            .ToList();
-
-        var frameworkRefs = doc.Descendants(ns + "FrameworkReference")
-            .Select(el => el.Attribute("Include")?.Value ?? "")
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct()
-            .OrderBy(name => name)
-            .ToList();
-
-        var wrapped = packageRefs
-            .Select(id => new PackageReferenceInfo
-            {
-                Id = id,
-                Version = null,
-                HasNuSpecAiMap = false
-            })
-            .ToList();
-
-        return new DependencyInfo
-        {
-            PackageReferences = wrapped,
-            FrameworkReferences = frameworkRefs
-        };
-    }
-
     private static string? GetProperty(XDocument doc, XNamespace ns, string propertyName)
     {
         var value = doc.Descendants(ns + propertyName).FirstOrDefault()?.Value;
