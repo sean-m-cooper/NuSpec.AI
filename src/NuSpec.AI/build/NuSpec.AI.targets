@@ -18,7 +18,11 @@
 
     <MakeDir Directories="$(_NuSpecAiOutputDir)" />
 
-    <Exec Command="dotnet &quot;$(_NuSpecAiToolPath)&quot; &quot;$(MSBuildProjectFullPath)&quot; --output &quot;$(_NuSpecAiOutputDirForCli)&quot; --formats &quot;$(NuSpecAiFormats)&quot;"
+    <PropertyGroup>
+      <_NuSpecAiFullDocsArg Condition="'$(NuSpecAiIncludeFullDocs)' == 'true'"> --full-docs</_NuSpecAiFullDocsArg>
+    </PropertyGroup>
+
+    <Exec Command="dotnet &quot;$(_NuSpecAiToolPath)&quot; &quot;$(MSBuildProjectFullPath)&quot; --output &quot;$(_NuSpecAiOutputDirForCli)&quot; --formats &quot;$(NuSpecAiFormats)&quot;$(_NuSpecAiFullDocsArg)"
           ConsoleToMSBuild="true" />
   </Target>
 

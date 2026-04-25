@@ -5,7 +5,7 @@ namespace NuSpec.AI.Tool.Models;
 public sealed class PackageMap
 {
     [JsonPropertyName("schemaVersion")]
-    public int SchemaVersion { get; init; } = 2;
+    public int SchemaVersion { get; init; } = 3;
 
     [JsonPropertyName("package")]
     public required PackageInfo Package { get; init; }

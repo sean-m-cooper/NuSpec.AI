@@ -2,14 +2,14 @@
 
 **Give AI coding assistants instant context about your NuGet package.**
 
-NuSpec.AI automatically generates a structured JSON map of your package's public API surface — types, members, signatures, documentation, and inferred roles — and embeds it in your `.nupkg` during `dotnet pack`. AI tools can read this file to understand your package without reflection, decompilation, or guesswork.
+NuSpec.AI automatically generates a structured JSON map of your package's public API surface (types, members, signatures, documentation, and inferred roles) and embeds it in your `.nupkg` during `dotnet pack`. AI tools can read this file to understand your package without reflection, decompilation, or guesswork.
 
 ## Quick Start
 
 1. Add the package:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="3.0.2" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="3.1.0" PrivateAssets="all" />
 ```
 
 2. Pack your project:
@@ -49,7 +49,7 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "package": {
     "id": "Acme.Orders",
     "version": "1.0.0",
@@ -123,7 +123,7 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 
 ## How It Works
 
-NuSpec.AI is a **development dependency** — it hooks into `dotnet pack` via MSBuild targets and does not ship as a runtime dependency of your package.
+NuSpec.AI is a **development dependency**: it hooks into `dotnet pack` via MSBuild targets and does not ship as a runtime dependency of your package.
 
 1. During pack, the MSBuild `.targets` file invokes the **NuSpec.AI CLI tool**
 2. The CLI tool parses your project's `.cs` files using **Roslyn** and builds a `CSharpCompilation` with a semantic model
@@ -135,10 +135,10 @@ NuSpec.AI is a **development dependency** — it hooks into `dotnet pack` via MS
 
 NuSpec.AI goes beyond syntax parsing. By creating a Roslyn `CSharpCompilation`, it can:
 
-- **Resolve type hierarchies** — know that `OrdersContext` inherits from `DbContext`
-- **Detect interface implementations** — recognize repository patterns even when the class name doesn't match
-- **Merge partial classes** — automatically combine partial declarations into a single type entry
-- **Format signatures accurately** — use `ISymbol.ToDisplayString()` for correct generic type representations
+- **Resolve type hierarchies**: know that `OrdersContext` inherits from `DbContext`
+- **Detect interface implementations**: recognize repository patterns even when the class name doesn't match
+- **Merge partial classes**: automatically combine partial declarations into a single type entry
+- **Format signatures accurately**: use `ISymbol.ToDisplayString()` for correct generic type representations
 
 ## Transitive Map Discovery
 
@@ -148,7 +148,7 @@ Each emitted `package-map.json` lists its direct package dependencies along with
 <NuGet packages root>/<A.id-lowercase>/<A.version>/ai/package-map.json
 ```
 
-The NuGet packages root is `~/.nuget/packages` on macOS/Linux and `%USERPROFILE%\.nuget\packages` on Windows by default; it can be overridden via the `NUGET_PACKAGES` environment variable or the `globalPackagesFolder` setting in `nuget.config`. Tools that read `obj/project.assets.json` (preferred) get the canonical `packageFolders` list directly — iterate them in order; the first match wins.
+The NuGet packages root is `~/.nuget/packages` on macOS/Linux and `%USERPROFILE%\.nuget\packages` on Windows by default; it can be overridden via the `NUGET_PACKAGES` environment variable or the `globalPackagesFolder` setting in `nuget.config`. Tools that read `obj/project.assets.json` (preferred) get the canonical `packageFolders` list directly; iterate them in order, and the first match wins.
 
 To traverse the full dependency tree, recurse into each found map's own `packageReferences` entries.
 
@@ -158,7 +158,7 @@ To traverse the full dependency tree, recurse into each found map's own `package
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `schemaVersion` | `int` | Always `2`. Will increment on breaking changes. |
+| `schemaVersion` | `int` | Always `3`. Will increment on breaking changes. |
 | `package` | `object` | Package identity and metadata. |
 | `dependencies` | `object` | Package and framework references. |
 | `publicSurface` | `object` | All public types, members, and namespaces. |
@@ -198,6 +198,7 @@ To traverse the full dependency tree, recurse into each found map's own `package
 | `kind` | `string` | `class`, `interface`, `enum`, `struct`, `record`, or `record-struct` |
 | `roles` | `string[]` | Inferred semantic roles (see below) |
 | `documentation` | `string?` | Content of `<summary>` XML doc comment. Omitted if absent. |
+| `docs` | `object?` | Structured XML doc fields (`params`, `returns`, `remarks`, etc.). Only emitted when `<NuSpecAiIncludeFullDocs>` is `true`. See "Docs object" below. |
 | `members` | `array` | Public members of the type |
 
 ### Members
@@ -208,6 +209,23 @@ To traverse the full dependency tree, recurse into each found map's own `package
 | `name` | `string` | Member name |
 | `signature` | `string` | Full signature including modifiers, types, and parameters |
 | `documentation` | `string?` | Content of `<summary>` XML doc comment. Omitted if absent. |
+| `docs` | `object?` | Structured XML doc fields. Only emitted when `<NuSpecAiIncludeFullDocs>` is `true`. See "Docs object" below. |
+
+### Docs object
+
+Optional, opt-in via `<NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>`. All fields are individually optional and only appear when the source XML contained the corresponding element. Whitespace is normalized; `<see cref="..."/>`, `<see langword="..."/>`, `<paramref>`, and `<typeparamref>` are rewritten to their bare textual form.
+
+| Field | Type | Source |
+|-------|------|--------|
+| `summary` | `string?` | `<summary>` (only on types when present) |
+| `params` | `{ name: string }?` | one entry per `<param name="...">` |
+| `typeparams` | `{ name: string }?` | one entry per `<typeparam name="...">` |
+| `returns` | `string?` | `<returns>` |
+| `remarks` | `string?` | `<remarks>` |
+| `example` | `string?` | `<example>` |
+| `exceptions` | `[{ type, when }]?` | one entry per `<exception cref="T:...">` |
+
+The `documentation` field continues to carry the bare summary string regardless of `<NuSpecAiIncludeFullDocs>`. The `ultra` format ignores this property by design.
 
 ## Role Inference
 
@@ -242,9 +260,9 @@ Available formats (all free and included):
 | Format    | File                        | Description                                            |
 |-----------|-----------------------------|--------------------------------------------------------|
 | `json`    | `ai/package-map.json`       | Standard JSON (default)                                |
-| `yaml`    | `ai/package-map.yaml`       | YAML — compact, human-readable                         |
-| `compact` | `ai/package-map.compact.json` | Minified JSON — smallest JSON form                   |
-| `ultra`   | `ai/package-map.ultra`      | Ultra-compact positional format — smallest token count |
+| `yaml`    | `ai/package-map.yaml`       | YAML: compact, human-readable                          |
+| `compact` | `ai/package-map.compact.json` | Minified JSON: smallest JSON form                    |
+| `ultra`   | `ai/package-map.ultra`      | Ultra-compact positional format: smallest token count  |
 
 Special value `all` emits every format:
 

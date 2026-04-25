@@ -1,30 +1,28 @@
 # NuSpec.AI
 
-**Give AI coding assistants instant context about your NuGet package.**
+**An AI assistant working with your package shouldn't have to guess.**
 
-NuSpec.AI automatically generates a structured JSON map of your package's public API surface — types, members, signatures, documentation, and inferred semantic roles — and embeds it in your `.nupkg` during `dotnet pack`. AI tools can read this file to understand your package without reflection, decompilation, or guesswork.
+When your library ships as a `.nupkg`, the AI helping a downstream developer can't read your source. It sees an opaque assembly reference: type names if it's lucky, nothing else. NuSpec.AI fixes that. During `dotnet pack` it analyzes your public API surface with Roslyn and writes a structured map (`ai/package-map.json`) into the `.nupkg`. AI tools read it and instantly know your types, signatures, doc comments, and inferred semantic roles.
 
 ## Quick Start
 
-1. Add the package to your `.csproj`:
+Add the package. That's the whole setup:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="3.0.2" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="3.1.0" PrivateAssets="all" />
 ```
 
-2. Pack your project:
+Then pack:
 
 ```bash
 dotnet pack
 ```
 
-That's it. Your `.nupkg` now contains `ai/package-map.json`.
+Your `.nupkg` now contains `ai/package-map.json`. NuSpec.AI is a development dependency: it runs at pack time and never ships into your consumer's bin folder.
 
-NuSpec.AI is a **development dependency only** — it runs during pack and does **not** ship as a runtime dependency of your package.
+## What Changes for the AI
 
-## What Gets Generated
-
-Given a project like this:
+Given this code in your package:
 
 ```csharp
 namespace Acme.Orders;
@@ -37,45 +35,29 @@ public class Order
     public OrderStatus Status { get; set; }
 }
 
-public enum OrderStatus { Pending, Confirmed, Shipped, Cancelled }
-
 public interface IOrderRepository
 {
     /// <summary>Gets an order by its unique identifier.</summary>
     Task<Order?> GetByIdAsync(int id, CancellationToken ct = default);
-    Task<Order> AddAsync(Order order, CancellationToken ct = default);
 }
 ```
 
-NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
+**Without NuSpec.AI**, an AI helping a consumer of your package sees `Acme.Orders.Order` as a referenced symbol with no structure. It guesses from the name. It doesn't know `Order` has an `Id`, a `CustomerId`, or a `Status`. It doesn't know `IOrderRepository.GetByIdAsync` exists, returns `Task<Order?>`, or accepts a `CancellationToken`. There is no doc comment to read. The AI either asks the user to paste source or writes code against a name and a vibe.
+
+**With NuSpec.AI**, the same AI reads `ai/package-map.json` from inside the `.nupkg` and gets:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "package": {
     "id": "Acme.Orders",
     "version": "1.0.0",
-    "description": "Order management library.",
-    "tags": ["orders"],
     "targetFrameworks": ["net8.0"]
   },
-  "dependencies": {
-    "packageReferences": [
-      {
-        "id": "Microsoft.EntityFrameworkCore",
-        "version": "8.0.0",
-        "hasNuSpecAiMap": false
-      }
-    ],
-    "frameworkReferences": []
-  },
   "publicSurface": {
-    "namespaces": ["Acme.Orders"],
     "types": [
       {
         "name": "Order",
-        "fullName": "Acme.Orders.Order",
-        "namespace": "Acme.Orders",
         "kind": "class",
         "roles": ["entity"],
         "documentation": "Represents a customer order.",
@@ -87,8 +69,6 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
       },
       {
         "name": "IOrderRepository",
-        "fullName": "Acme.Orders.IOrderRepository",
-        "namespace": "Acme.Orders",
         "kind": "interface",
         "roles": ["repository"],
         "members": [
@@ -97,11 +77,6 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
             "name": "GetByIdAsync",
             "signature": "Task<Order?> GetByIdAsync(int id, CancellationToken ct = default)",
             "documentation": "Gets an order by its unique identifier."
-          },
-          {
-            "kind": "method",
-            "name": "AddAsync",
-            "signature": "Task<Order> AddAsync(Order order, CancellationToken ct = default)"
           }
         ]
       }
@@ -110,99 +85,96 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 }
 ```
 
-## What's Captured
+Every type, every public member, every signature, every doc comment, plus inferred semantic roles (`entity`, `repository`, `service`, `db-context`, etc.). The AI can call your API correctly on the first try.
 
-- **Package metadata** — id, version, description, tags, target frameworks, and dependencies (read from your `.csproj`)
-- **Public types** — classes, interfaces, enums, structs, records, and record structs, including nested and generic types
-- **Public members** — methods, properties, constructors, fields, and enum values with full signatures
-- **XML doc comments** — `<summary>` content on types and members (omitted when absent)
-- **Semantic roles** — automatically inferred from type hierarchy and naming conventions (see below)
+## Output Formats
 
-## Role Inference
+NuSpec.AI emits the same data in four formats. Pick whichever your AI tooling prefers; you can emit several at once.
 
-NuSpec.AI uses Roslyn's semantic model to infer what each type *does*, not just what it *is*. A type can have multiple roles.
+| Format    | File                          | Sample size¹ | Notes |
+|-----------|-------------------------------|--------------|-------|
+| `json`    | `ai/package-map.json`         | 3,536 B      | Default. Standard JSON, easiest to inspect. |
+| `yaml`    | `ai/package-map.yaml`         | 2,218 B (-37%) | Human-readable, less punctuation. |
+| `compact` | `ai/package-map.compact.json` | 1,684 B (-52%) | Minified JSON. Same schema as `json`. |
+| `ultra`   | `ai/package-map.ultra`        |   644 B (-82%) | Positional text format. Smallest token count. |
 
-| Role | How It's Detected |
-|------|-------------------|
-| `entity` | Class/struct with 2+ properties and no public methods |
-| `dto` | Record with only properties and no methods |
-| `repository` | Name contains "Repository" or implements a "Repository" interface |
-| `db-context` | Inherits from `DbContext` |
-| `service` | Name ends with "Service" |
-| `factory` | Name ends with "Factory" |
-| `middleware` | Implements `IMiddleware` or has `Invoke`/`InvokeAsync` with `HttpContext` |
-| `entry-point` | Extension methods on `IServiceCollection` |
-| `service-collection-extension` | Static class extending `IServiceCollection` |
+¹ Sizes from a small sample project (4 types, 10 members). Larger packages compress proportionally.
 
-## Context Window Impact
-
-**The core value: one file gives an AI complete API knowledge that otherwise requires reading every source file — or isn't available at all.**
-
-When your package is consumed as a NuGet reference, the AI assistant has no source code to read. It can see the `.dll` in the references, but it can't inspect it without reflection. `package-map.json` gives it structured, immediate access to every public type, method signature, doc comment, and semantic role.
-
-### How big is the file?
-
-The JSON captures only the **public API surface** — no method bodies, no private members, no `using` statements. Its size depends on the shape of your API, not the complexity of your implementation.
-
-**Measured across 24 production projects (3.5 MB of source code):**
-
-| Project Profile | Types | Source | JSON | Change |
-|----------------|-------|--------|------|--------|
-| Azure Functions (services, business logic) | 21 | 192 KB | 32 KB | **-84%** |
-| Data processing functions | 18 | 102 KB | 18 KB | **-82%** |
-| Common services library | 44 | 515 KB | 119 KB | **-77%** |
-| Azure provisioning functions | 16 | 95 KB | 26 KB | **-73%** |
-| API client library | 7 | 41 KB | 13 KB | **-67%** |
-| Database management | 16 | 108 KB | 41 KB | **-62%** |
-| Shared library (673 types) | 673 | 1,061 KB | 880 KB | **-17%** |
-| Common providers | 116 | 510 KB | 287 KB | **-44%** |
-| Models library (mostly DTOs) | 723 | 527 KB | 840 KB | +59% |
-
-**Across all 24 projects: 3,554 KB of source → 2,424 KB of JSON (32% smaller overall).**
-
-**What drives the size:** the number of public types and members, not the amount of implementation code. A service with 5 public methods produces the same JSON whether those methods are 10 lines or 200 lines each.
-
-**When the JSON saves the most:** Projects with substantial implementation logic — services, functions, repositories, middleware. Savings of 60–84% are typical.
-
-**When the JSON is larger:** Model-heavy projects with hundreds of small DTOs, enums, and interfaces where the source is already lean. The JSON metadata structure adds overhead that exceeds what was stripped.
-
-### The real comparison
-
-For **NuGet package consumers**, the alternative to `package-map.json` isn't "read the source" — it's "have no structured API context at all." The AI would need to rely on IntelliSense hints, documentation websites, or asking you to explain the API. One JSON file replaces all of that with a complete, machine-readable API map.
-
-## Configuration
-
-### Output formats
-
-All formats are free and included:
+Configure via `<NuSpecAiFormats>` in your `.csproj`:
 
 ```xml
 <PropertyGroup>
-  <NuSpecAiFormats>json;yaml;ultra</NuSpecAiFormats>
+  <NuSpecAiFormats>json;ultra</NuSpecAiFormats>
 </PropertyGroup>
 ```
 
-| Format    | File                          | Description                         |
-|-----------|-------------------------------|-------------------------------------|
-| `json`    | `ai/package-map.json`         | Standard JSON (default)             |
-| `yaml`    | `ai/package-map.yaml`         | Compact, human-readable             |
-| `compact` | `ai/package-map.compact.json` | Minified JSON                       |
-| `ultra`   | `ai/package-map.ultra`        | Ultra-compact positional, smallest  |
-
 Use `all` to emit every format.
 
-### Attributes
+## Transitive Map Discovery
 
-`[AiRole]`, `[AiIgnore]`, `[AiDescription]` ship as `internal` source compiled into your assembly:
+NuSpec.AI 3.0 adds dependency awareness. Each emitted map records your package's direct dependencies along with their resolved versions and a flag for whether the dependency itself ships a NuSpec.AI map:
 
-```csharp
-using NuSpec.AI;
-
-[AiRole("aggregate-root")]
-public class Order { }
+```json
+"dependencies": {
+  "packageReferences": [
+    {
+      "id": "Microsoft.EntityFrameworkCore",
+      "version": "8.0.0",
+      "hasNuSpecAiMap": false
+    },
+    {
+      "id": "Acme.OrdersCore",
+      "version": "1.2.0",
+      "hasNuSpecAiMap": true
+    }
+  ]
+}
 ```
 
-### Disabling generation
+When `hasNuSpecAiMap` is `true`, an AI tool can resolve the standard NuGet cache path and read that dependency's map too:
+
+```
+<NuGet packages root>/<id-lowercase>/<version>/ai/package-map.json
+```
+
+It can recurse the same way through that map's own `packageReferences`. The result: structured API knowledge propagates transitively through your dependency graph automatically, with no extra work from you or your consumers.
+
+## Context Window Impact
+
+A consumer's AI doesn't have your source. Its only structural alternative to NuSpec.AI is to **decompile your DLL**, which produces full method bodies, async state machines, backing fields, and compiler-generated artifacts. Two real-world packages, packed locally with NuSpec.AI:
+
+**Newtonsoft.Json** (127 public types, 1,198 members):
+
+| Source for the AI                       | Bytes     | ≈ Tokens† | vs. decompilation |
+|-----------------------------------------|----------:|----------:|------------------:|
+| ILSpy-decompiled `Newtonsoft.Json.dll`  | 1,863,427 |  ~466,000 | n/a               |
+| `package-map.json`                      |   328,155 |   ~82,000 | **-82%**          |
+| `package-map.json` with `--full-docs` (v3.1, opt-in) |   636,713 |  ~159,000 | **-66%**          |
+| `package-map.yaml`                      |   239,209 |   ~60,000 | **-87%**          |
+| `package-map.compact.json`              |   195,481 |   ~49,000 | **-90%**          |
+| `package-map.ultra`                     |   106,418 |   ~27,000 | **-94%**          |
+
+**Microsoft.EntityFrameworkCore 8.0.10** (a much larger surface):
+
+| Source for the AI                              | Bytes     | ≈ Tokens† | vs. decompilation |
+|------------------------------------------------|----------:|----------:|------------------:|
+| ILSpy-decompiled `Microsoft.EntityFrameworkCore.dll` | 9,574,757 | ~2,394,000 | n/a               |
+| `package-map.json`                             | 4,262,664 | ~1,066,000 | **-55%**          |
+| `package-map.yaml`                             | 3,535,139 |   ~884,000 | **-63%**          |
+| `package-map.compact.json`                     | 3,244,493 |   ~811,000 | **-66%**          |
+| `package-map.ultra`                            | 2,483,495 |   ~621,000 | **-74%**          |
+
+† Bytes ÷ 4 is the standard rough estimate for English/code text in modern LLM tokenizers. The decompiled row is what actually lands in the AI's context window when it tries to inspect your package; the map rows are what NuSpec.AI provides instead.
+
+The map's footprint inside the `.nupkg` itself is small: JSON gzips well inside the zip envelope. Newtonsoft.Json grew from 332 KB to 360 KB (+8.4%); EF Core from 1.19 MB to 2.09 MB (+76%, dominated by ~7 MB of XML documentation comments preserved in the map).
+
+NuSpec.AI 3.1 adds `<NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>` (or `--full-docs` on the CLI) to opt into capturing structured `<param>`, `<returns>`, `<remarks>`, `<example>`, and `<exception>` text on every type and member. The default `documentation` summary stays the same; turning the flag on roughly doubles the JSON map's size in exchange for a complete picture of the API contract. The `ultra` format ignores the flag by design.
+
+And decompiled output omits two things the AI needs most: **XML doc comments** (those live in a sibling `.xml` file that isn't always shipped to nuget.org) and **inferred semantic roles** (a decompiler has no notion of "this is a repository" or "this is a `DbContext`"). NuSpec.AI bundles both into the map directly.
+
+## Configuration
+
+### Disable generation
 
 ```xml
 <PropertyGroup>
@@ -210,18 +182,41 @@ public class Order { }
 </PropertyGroup>
 ```
 
-Or per-invocation:
+Or per-invocation: `dotnet pack -p:NuSpecAiEnabled=false`.
 
-```bash
-dotnet pack -p:NuSpecAiEnabled=false
+### Fine-grained control
+
+Three opt-in attributes ship as `internal` source compiled into your assembly:
+
+```csharp
+[AiRole("aggregate-root")]   public class Order { }
+[AiIgnore]                   internal class Helper { }
+[AiDescription("Stream consumers must handle ordering.")]
+public interface IEventStream { }
 ```
+
+Full documentation including the role inference rules, every configuration option, and the complete schema reference lives in the [GitHub README](https://github.com/sean-m-cooper/NuSpec.AI#readme).
+
+### Capture full XML doc comments
+
+By default, NuSpec.AI extracts the `<summary>` element from each type/member's XML doc comment. To also capture `<param>`, `<typeparam>`, `<returns>`, `<remarks>`, `<example>`, and `<exception>`:
+
+```xml
+<PropertyGroup>
+  <NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>
+</PropertyGroup>
+```
+
+This populates a structured `docs` object on each type and member. The `documentation` field continues to carry the bare summary string for back-compat. Note: the `ultra` format ignores this property; it's a positional minimum-tokens format and stays summaries-only by design.
+
+Expect the map to grow ~1.6–2× when enabled, depending on how much `<param>` / `<remarks>` text your library has.
 
 ## Requirements
 
-- **.NET 8.0 SDK** or later
-- Project must be packable (`<IsPackable>true</IsPackable>` or default)
+- **.NET 8.0 SDK or later** (build-time only; your package can target anything from netstandard2.0 onward)
+- Project must be packable
 
 ## Links
 
-- [Source code and issues](https://github.com/sean-m-cooper/NuSpec.AI)
+- [GitHub repo, full docs, and issues](https://github.com/sean-m-cooper/NuSpec.AI)
 - [License (MIT)](https://github.com/sean-m-cooper/NuSpec.AI/blob/main/LICENSE)

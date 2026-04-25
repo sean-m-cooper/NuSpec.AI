@@ -6,7 +6,7 @@ namespace NuSpec.AI.Tool.Tests.Models;
 public class SchemaVersionTests
 {
     [Fact]
-    public void DefaultPackageMapHasSchemaVersion2()
+    public void DefaultPackageMapHasSchemaVersion3()
     {
         var map = new PackageMap
         {
@@ -29,6 +29,6 @@ public class SchemaVersionTests
             }
         };
 
-        Assert.Equal(2, map.SchemaVersion);
+        Assert.Equal(3, map.SchemaVersion);
     }
 }

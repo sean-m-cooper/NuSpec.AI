@@ -492,4 +492,50 @@ public class ApiSurfaceCollectorTests
         Assert.All(result.Types, t => Assert.DoesNotContain("System", t.Namespace));
         Assert.Single(result.Types);
     }
+
+    [Fact]
+    public void Collector_FullDocsTrue_PopulatesDocsObject()
+    {
+        var compilation = TestHelpers.CreateCompilation("""
+            namespace Foo
+            {
+                /// <summary>A widget.</summary>
+                /// <remarks>Use carefully.</remarks>
+                public class Widget
+                {
+                    /// <summary>Spin it.</summary>
+                    /// <param name="speed">RPM.</param>
+                    /// <returns>Final state.</returns>
+                    public int Spin(int speed) => speed;
+                }
+            }
+            """);
+
+        var surface = ApiSurfaceCollector.Collect(compilation, includeFullDocs: true);
+
+        var widget = surface.Types.Single(t => t.Name == "Widget");
+        Assert.Equal("Use carefully.", widget.Docs!.Remarks);
+
+        var spin = widget.Members.Single(m => m.Name == "Spin");
+        Assert.Equal("RPM.", spin.Docs!.Params!["speed"]);
+        Assert.Equal("Final state.", spin.Docs.Returns);
+    }
+
+    [Fact]
+    public void Collector_FullDocsFalse_OmitsDocsObject()
+    {
+        var compilation = TestHelpers.CreateCompilation("""
+            namespace Foo
+            {
+                /// <summary>A widget.</summary>
+                /// <remarks>Use carefully.</remarks>
+                public class Widget {}
+            }
+            """);
+
+        var surface = ApiSurfaceCollector.Collect(compilation, includeFullDocs: false);
+        var widget = surface.Types.Single(t => t.Name == "Widget");
+        Assert.Null(widget.Docs);
+        Assert.Equal("A widget.", widget.Documentation);
+    }
 }

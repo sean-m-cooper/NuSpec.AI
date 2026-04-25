@@ -15,41 +15,41 @@
 ## File Map
 
 **Models (`src/NuSpec.AI.Tool/Models/`)**
-- Modify: `DependencyInfo.cs` — `PackageReferences` type changes from `IReadOnlyList<string>` to `IReadOnlyList<PackageReferenceInfo>`.
-- Modify: `PackageMap.cs` — `SchemaVersion` default changes from `1` to `2`.
-- Create: `PackageReferenceInfo.cs` — per-package entry with `Id`, `Version`, `HasNuSpecAiMap`.
+- Modify: `DependencyInfo.cs`: `PackageReferences` type changes from `IReadOnlyList<string>` to `IReadOnlyList<PackageReferenceInfo>`.
+- Modify: `PackageMap.cs`: `SchemaVersion` default changes from `1` to `2`.
+- Create: `PackageReferenceInfo.cs`: per-package entry with `Id`, `Version`, `HasNuSpecAiMap`.
 
 **ProjectMetadata (`src/NuSpec.AI.Tool/ProjectMetadata/`)**
-- Modify: `CsprojReader.cs` — replace `ReadDependencies` with `ReadDeclaredPackageReferences` (returns `IReadOnlyList<DeclaredPackageReference>`) and `ReadFrameworkReferences` (returns `IReadOnlyList<string>`).
-- Create: `DeclaredPackageReference.cs` — `Id`, `IsPrivateAssetsAll`.
-- Create: `AssetsReader.cs` — parses `obj/project.assets.json`, returns `AssetsInfo`.
-- Create: `AssetsInfo.cs` — `PackageFolders` (ordered), `ResolvedVersions` (id → version).
-- Create: `DependencyResolver.cs` — orchestrates csproj + assets + filesystem checks, returns `DependencyInfo`.
+- Modify: `CsprojReader.cs`: replace `ReadDependencies` with `ReadDeclaredPackageReferences` (returns `IReadOnlyList<DeclaredPackageReference>`) and `ReadFrameworkReferences` (returns `IReadOnlyList<string>`).
+- Create: `DeclaredPackageReference.cs`: `Id`, `IsPrivateAssetsAll`.
+- Create: `AssetsReader.cs`: parses `obj/project.assets.json`, returns `AssetsInfo`.
+- Create: `AssetsInfo.cs`: `PackageFolders` (ordered), `ResolvedVersions` (id → version).
+- Create: `DependencyResolver.cs`: orchestrates csproj + assets + filesystem checks, returns `DependencyInfo`.
 
 **Analysis (`src/NuSpec.AI.Tool/Analysis/`)**
-- Modify: `ProjectAnalyzer.cs` — `Analyze` uses `DependencyResolver.Resolve` instead of `CsprojReader.ReadDependencies`.
+- Modify: `ProjectAnalyzer.cs`: `Analyze` uses `DependencyResolver.Resolve` instead of `CsprojReader.ReadDependencies`.
 
 **Formats (`src/NuSpec.AI.Tool/Formats/`)**
-- Modify: `UltraCompactFormatter.cs` — emit `id|version|flag` per dep on the `#dep` line.
-- (`JsonFormatter`, `CompactJsonFormatter`, `YamlFormatter` — no source change; serializers handle the model change.)
+- Modify: `UltraCompactFormatter.cs`: emit `id|version|flag` per dep on the `#dep` line.
+- (`JsonFormatter`, `CompactJsonFormatter`, `YamlFormatter`: no source change; serializers handle the model change.)
 
 **Tests (`tests/NuSpec.AI.Tool.Tests/`)**
-- Modify: `CsprojReaderTests.cs` — update existing dependency tests to use new method names; add tests for `IsPrivateAssetsAll`.
+- Modify: `CsprojReaderTests.cs`: update existing dependency tests to use new method names; add tests for `IsPrivateAssetsAll`.
 - Create: `AssetsReaderTests.cs`.
 - Create: `DependencyResolverTests.cs`.
 - Create: `Formats/UltraCompactFormatterDependencyTests.cs` (or extend existing if present).
-- Modify: `Integration/FormatsIntegrationTests.cs` — update fixtures for new dep shape.
+- Modify: `Integration/FormatsIntegrationTests.cs`: update fixtures for new dep shape.
 
 **Sample (`tests/SampleProject/`)**
 - No structural change required. Schema regression captured in unit/integration tests.
 
 **Packaging (`src/NuSpec.AI/`)**
-- Modify: `NuSpec.AI.csproj` — bump `<Version>` from `2.0.0` to `3.0.0`.
+- Modify: `NuSpec.AI.csproj`: bump `<Version>` from `2.0.0` to `3.0.0`.
 
 **Docs**
-- Modify: `README.md` — bump schemaVersion mention, update Schema Reference → Dependencies table, update example snippet, add "Transitive Map Discovery" section, bump version in Quick Start.
-- Modify: `NUGET_README.md` — bump schemaVersion, update example, bump version.
-- Modify: `CLAUDE.md` — note `schemaVersion: 2` and one-sentence transitive map discovery summary.
+- Modify: `README.md`: bump schemaVersion mention, update Schema Reference → Dependencies table, update example snippet, add "Transitive Map Discovery" section, bump version in Quick Start.
+- Modify: `NUGET_README.md`: bump schemaVersion, update example, bump version.
+- Modify: `CLAUDE.md`: note `schemaVersion: 2` and one-sentence transitive map discovery summary.
 
 ---
 
@@ -113,7 +113,7 @@ public class PackageReferenceInfoTests
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~PackageReferenceInfoTests"
 ```
 
-Expected: build error — `PackageReferenceInfo` not found.
+Expected: build error: `PackageReferenceInfo` not found.
 
 - [ ] **Step 3: Create the model**
 
@@ -137,7 +137,7 @@ public sealed class PackageReferenceInfo
 }
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+- [ ] **Step 4: Run tests, expect PASS**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~PackageReferenceInfoTests"
@@ -205,7 +205,7 @@ public class SchemaVersionTests
 }
 ```
 
-- [ ] **Step 2: Run test — expect compile failure**
+- [ ] **Step 2: Run test, expect compile failure**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~SchemaVersionTests"
@@ -261,7 +261,7 @@ return new DependencyInfo
 };
 ```
 
-This is a temporary shim — Task 6 replaces the call to `ReadDependencies` with `DependencyResolver.Resolve` and Task 4 removes `ReadDependencies` entirely.
+This is a temporary shim: Task 6 replaces the call to `ReadDependencies` with `DependencyResolver.Resolve` and Task 4 removes `ReadDependencies` entirely.
 
 - [ ] **Step 6: Update existing `CsprojReaderTests` to compile**
 
@@ -280,7 +280,7 @@ Replace lines 174-175 (`ExcludesPrivateAssetsAll` assertion) with:
         Assert.Equal("Visible.Package", deps.PackageReferences[0].Id);
 ```
 
-- [ ] **Step 7: Run all tests — expect green**
+- [ ] **Step 7: Run all tests, expect green**
 
 ```bash
 dotnet test NuSpec.AI.slnx
@@ -376,13 +376,13 @@ Append to `tests/NuSpec.AI.Tool.Tests/CsprojReaderTests.cs` before the closing `
     }
 ```
 
-- [ ] **Step 2: Run tests — expect failure**
+- [ ] **Step 2: Run tests, expect failure**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~CsprojReaderTests.ReadDeclaredPackageReferences|FullyQualifiedName~CsprojReaderTests.ReadFrameworkReferences"
 ```
 
-Expected: build error — methods don't exist.
+Expected: build error: methods don't exist.
 
 - [ ] **Step 3: Create `DeclaredPackageReference`**
 
@@ -439,7 +439,7 @@ public static IReadOnlyList<string> ReadFrameworkReferences(string csprojPath)
 }
 ```
 
-- [ ] **Step 5: Run tests — expect PASS**
+- [ ] **Step 5: Run tests, expect PASS**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~CsprojReaderTests"
@@ -601,13 +601,13 @@ public class AssetsReaderTests : IDisposable
 }
 ```
 
-- [ ] **Step 2: Run tests — expect compile failure**
+- [ ] **Step 2: Run tests, expect compile failure**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~AssetsReaderTests"
 ```
 
-Expected: build error — `AssetsReader` not found.
+Expected: build error: `AssetsReader` not found.
 
 - [ ] **Step 3: Create `AssetsInfo`**
 
@@ -700,7 +700,7 @@ public static class AssetsReader
 }
 ```
 
-- [ ] **Step 5: Run tests — expect PASS**
+- [ ] **Step 5: Run tests, expect PASS**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~AssetsReaderTests"
@@ -949,13 +949,13 @@ public class DependencyResolverTests : IDisposable
 }
 ```
 
-- [ ] **Step 2: Run tests — expect compile failure**
+- [ ] **Step 2: Run tests, expect compile failure**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~DependencyResolverTests"
 ```
 
-Expected: build error — `DependencyResolver` not found.
+Expected: build error: `DependencyResolver` not found.
 
 - [ ] **Step 3: Create `DependencyResolver`**
 
@@ -1017,7 +1017,7 @@ public static class DependencyResolver
 }
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+- [ ] **Step 4: Run tests, expect PASS**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~DependencyResolverTests"
@@ -1059,7 +1059,7 @@ In `src/NuSpec.AI.Tool/ProjectMetadata/CsprojReader.cs`, delete the entire `Read
 
 In `tests/NuSpec.AI.Tool.Tests/CsprojReaderTests.cs`, delete the `ReadsPackageReferences`, `ExcludesPrivateAssetsAll`, and `ReadsFrameworkReferences` test methods. Their behavior is covered by `ReadDeclaredPackageReferences` tests (Task 3) and `DependencyResolverTests` (Task 5).
 
-- [ ] **Step 4: Run all tests — expect green**
+- [ ] **Step 4: Run all tests, expect green**
 
 ```bash
 dotnet test NuSpec.AI.slnx
@@ -1151,7 +1151,7 @@ public class UltraCompactFormatterDepTests
 }
 ```
 
-- [ ] **Step 2: Run tests — expect failure**
+- [ ] **Step 2: Run tests, expect failure**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~UltraCompactFormatterDepTests"
@@ -1180,7 +1180,7 @@ Then add this helper method to the class (near the bottom, beside the other `For
     }
 ```
 
-- [ ] **Step 4: Run tests — expect PASS**
+- [ ] **Step 4: Run tests, expect PASS**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~UltraCompactFormatterDepTests"
@@ -1194,7 +1194,7 @@ Expected: 3/3 passing.
 dotnet test NuSpec.AI.slnx
 ```
 
-Expected: all tests pass. (Some existing integration/format tests may need fixture updates — see Task 8.)
+Expected: all tests pass. (Some existing integration/format tests may need fixture updates; see Task 8.)
 
 - [ ] **Step 6: Commit**
 
@@ -1239,7 +1239,7 @@ Assert.Contains("\"packageReferences\":[", output);
 Assert.Contains("\"id\":\"Foo\"", output);
 ```
 
-- [ ] **Step 3: Re-run full suite — expect green**
+- [ ] **Step 3: Re-run full suite, expect green**
 
 ```bash
 dotnet test NuSpec.AI.slnx
@@ -1351,7 +1351,7 @@ public class EndToEndDependencyTests : IDisposable
 }
 ```
 
-- [ ] **Step 2: Run test — expect PASS**
+- [ ] **Step 2: Run test, expect PASS**
 
 ```bash
 dotnet test tests/NuSpec.AI.Tool.Tests/NuSpec.AI.Tool.Tests.csproj --filter "FullyQualifiedName~EndToEndDependencyTests"
@@ -1549,7 +1549,7 @@ Inspect the generated `ai/package-map.json` inside the produced `.nupkg`. Confir
 - `"schemaVersion": 2`
 - `packageReferences` entries are objects with `id`, `version`, `hasNuSpecAiMap`
 
-(If `SampleProject` has any direct PackageReferences other than NuSpec.AI itself — which is `PrivateAssets="all"` and excluded — they should appear in the enriched form.)
+(If `SampleProject` has any direct PackageReferences other than NuSpec.AI itself, which is `PrivateAssets="all"` and excluded, they should appear in the enriched form.)
 
 - [ ] **Step 4: Hand off to finishing-a-development-branch**
 
@@ -1570,4 +1570,4 @@ After the suite passes, invoke `superpowers:finishing-a-development-branch` to c
 
 **No placeholders:** every step contains either exact code, exact commands, or exact file/line references.
 
-**Type consistency:** `PackageReferenceInfo`, `DeclaredPackageReference`, `AssetsInfo`, `DependencyResolver`, `DependencyInfo` (existing) — names used consistently across tasks. Property names (`Id`, `Version`, `HasNuSpecAiMap`, `IsPrivateAssetsAll`, `PackageFolders`, `ResolvedVersions`, `PackageReferences`, `FrameworkReferences`) are stable across every reference.
+**Type consistency:** `PackageReferenceInfo`, `DeclaredPackageReference`, `AssetsInfo`, `DependencyResolver`, `DependencyInfo` (existing): names used consistently across tasks. Property names (`Id`, `Version`, `HasNuSpecAiMap`, `IsPrivateAssetsAll`, `PackageFolders`, `ResolvedVersions`, `PackageReferences`, `FrameworkReferences`) are stable across every reference.

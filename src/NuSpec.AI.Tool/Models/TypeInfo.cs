@@ -23,6 +23,10 @@ public sealed class TypeInfo
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Documentation { get; init; }
 
+    [JsonPropertyName("docs")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DocsInfo? Docs { get; init; }
+
     [JsonPropertyName("members")]
     public required IReadOnlyList<MemberInfo> Members { get; init; }
 }
