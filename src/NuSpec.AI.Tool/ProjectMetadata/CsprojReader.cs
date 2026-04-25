@@ -76,9 +76,18 @@ public static class CsprojReader
             .OrderBy(name => name)
             .ToList();
 
+        var wrapped = packageRefs
+            .Select(id => new PackageReferenceInfo
+            {
+                Id = id,
+                Version = null,
+                HasNuSpecAiMap = false
+            })
+            .ToList();
+
         return new DependencyInfo
         {
-            PackageReferences = packageRefs,
+            PackageReferences = wrapped,
             FrameworkReferences = frameworkRefs
         };
     }

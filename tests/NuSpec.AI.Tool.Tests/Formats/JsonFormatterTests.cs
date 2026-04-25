@@ -25,7 +25,7 @@ public class JsonFormatterTests : FormatterTestBase
         var map = BuildSamplePackageMap();
         var result = _formatter.Serialize(map);
         var doc = JsonDocument.Parse(result); // throws if invalid
-        Assert.Equal(1, doc.RootElement.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(2, doc.RootElement.GetProperty("schemaVersion").GetInt32());
     }
 
     [Fact]

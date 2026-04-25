@@ -23,7 +23,7 @@ public sealed class UltraCompactFormatter : IFormatter
         if (pkg.TargetFrameworks.Count > 0)
             sb.AppendLine($"#tfm {string.Join(";", pkg.TargetFrameworks)}");
         if (deps.PackageReferences.Count > 0)
-            sb.AppendLine($"#dep {string.Join(";", deps.PackageReferences)}");
+            sb.AppendLine($"#dep {string.Join(";", deps.PackageReferences.Select(p => p.Id))}");
         if (deps.FrameworkReferences.Count > 0)
             sb.AppendLine($"#fref {string.Join(";", deps.FrameworkReferences)}");
 

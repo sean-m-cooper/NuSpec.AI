@@ -5,7 +5,7 @@ namespace NuSpec.AI.Tool.Models;
 public sealed class DependencyInfo
 {
     [JsonPropertyName("packageReferences")]
-    public required IReadOnlyList<string> PackageReferences { get; init; }
+    public required IReadOnlyList<PackageReferenceInfo> PackageReferences { get; init; }
 
     [JsonPropertyName("frameworkReferences")]
     public required IReadOnlyList<string> FrameworkReferences { get; init; }

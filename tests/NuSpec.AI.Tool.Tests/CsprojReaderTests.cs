@@ -152,7 +152,7 @@ public class CsprojReaderTests : IDisposable
             """);
 
         var deps = CsprojReader.ReadDependencies(path);
-        Assert.Equal(new[] { "Newtonsoft.Json", "Serilog" }, deps.PackageReferences);
+        Assert.Equal(new[] { "Newtonsoft.Json", "Serilog" }, deps.PackageReferences.Select(p => p.Id).ToArray());
     }
 
     [Fact]
@@ -172,7 +172,7 @@ public class CsprojReaderTests : IDisposable
 
         var deps = CsprojReader.ReadDependencies(path);
         Assert.Single(deps.PackageReferences);
-        Assert.Equal("Visible.Package", deps.PackageReferences[0]);
+        Assert.Equal("Visible.Package", deps.PackageReferences[0].Id);
     }
 
     [Fact]
