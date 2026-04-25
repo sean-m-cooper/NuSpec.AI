@@ -9,7 +9,7 @@ When your library ships as a `.nupkg`, the AI helping a downstream developer can
 Add the package — that's the whole setup:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="3.0.2" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="3.1.0" PrivateAssets="all" />
 ```
 
 Then pack:
@@ -48,7 +48,7 @@ public interface IOrderRepository
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "package": {
     "id": "Acme.Orders",
     "version": "1.0.0",
@@ -193,6 +193,20 @@ public interface IEventStream { }
 ```
 
 Full documentation including the role inference rules, every configuration option, and the complete schema reference lives in the [GitHub README](https://github.com/sean-m-cooper/NuSpec.AI#readme).
+
+### Capture full XML doc comments
+
+By default, NuSpec.AI extracts the `<summary>` element from each type/member's XML doc comment. To also capture `<param>`, `<typeparam>`, `<returns>`, `<remarks>`, `<example>`, and `<exception>`:
+
+```xml
+<PropertyGroup>
+  <NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>
+</PropertyGroup>
+```
+
+This populates a structured `docs` object on each type and member. The `documentation` field continues to carry the bare summary string for back-compat. Note: the `ultra` format ignores this property — it's a positional minimum-tokens format and stays summaries-only by design.
+
+Expect the map to grow ~1.6–2× when enabled, depending on how much `<param>` / `<remarks>` text your library has.
 
 ## Requirements
 

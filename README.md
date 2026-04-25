@@ -9,7 +9,7 @@ NuSpec.AI automatically generates a structured JSON map of your package's public
 1. Add the package:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="3.0.2" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="3.1.0" PrivateAssets="all" />
 ```
 
 2. Pack your project:
@@ -49,7 +49,7 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 
 ```json
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "package": {
     "id": "Acme.Orders",
     "version": "1.0.0",
@@ -158,7 +158,7 @@ To traverse the full dependency tree, recurse into each found map's own `package
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `schemaVersion` | `int` | Always `2`. Will increment on breaking changes. |
+| `schemaVersion` | `int` | Always `3`. Will increment on breaking changes. |
 | `package` | `object` | Package identity and metadata. |
 | `dependencies` | `object` | Package and framework references. |
 | `publicSurface` | `object` | All public types, members, and namespaces. |
@@ -198,6 +198,7 @@ To traverse the full dependency tree, recurse into each found map's own `package
 | `kind` | `string` | `class`, `interface`, `enum`, `struct`, `record`, or `record-struct` |
 | `roles` | `string[]` | Inferred semantic roles (see below) |
 | `documentation` | `string?` | Content of `<summary>` XML doc comment. Omitted if absent. |
+| `docs` | `object?` | Structured XML doc fields (`params`, `returns`, `remarks`, etc.). Only emitted when `<NuSpecAiIncludeFullDocs>` is `true`. See "Docs object" below. |
 | `members` | `array` | Public members of the type |
 
 ### Members
@@ -208,6 +209,23 @@ To traverse the full dependency tree, recurse into each found map's own `package
 | `name` | `string` | Member name |
 | `signature` | `string` | Full signature including modifiers, types, and parameters |
 | `documentation` | `string?` | Content of `<summary>` XML doc comment. Omitted if absent. |
+| `docs` | `object?` | Structured XML doc fields. Only emitted when `<NuSpecAiIncludeFullDocs>` is `true`. See "Docs object" below. |
+
+### Docs object
+
+Optional, opt-in via `<NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>`. All fields are individually optional and only appear when the source XML contained the corresponding element. Whitespace is normalized; `<see cref="..."/>`, `<see langword="..."/>`, `<paramref>`, and `<typeparamref>` are rewritten to their bare textual form.
+
+| Field | Type | Source |
+|-------|------|--------|
+| `summary` | `string?` | `<summary>` (only on types when present) |
+| `params` | `{ name: string }?` | one entry per `<param name="...">` |
+| `typeparams` | `{ name: string }?` | one entry per `<typeparam name="...">` |
+| `returns` | `string?` | `<returns>` |
+| `remarks` | `string?` | `<remarks>` |
+| `example` | `string?` | `<example>` |
+| `exceptions` | `[{ type, when }]?` | one entry per `<exception cref="T:...">` |
+
+The `documentation` field continues to carry the bare summary string regardless of `<NuSpecAiIncludeFullDocs>`. The `ultra` format ignores this property by design.
 
 ## Role Inference
 
