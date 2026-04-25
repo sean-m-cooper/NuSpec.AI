@@ -141,20 +141,33 @@ It can recurse the same way through that map's own `packageReferences`. The resu
 
 ## Context Window Impact
 
-A consumer's AI doesn't have your source. Its only structural alternative to NuSpec.AI is to **decompile your DLL** — which produces full method bodies, async state machines, backing fields, and compiler-generated artifacts. For a real-world project, NuSpec.AI's own ~50 KB CLI assembly:
+A consumer's AI doesn't have your source. Its only structural alternative to NuSpec.AI is to **decompile your DLL** — which produces full method bodies, async state machines, backing fields, and compiler-generated artifacts. Two real-world packages, packed locally with NuSpec.AI:
 
-| Source for the AI                       | Bytes  | ≈ Tokens† | vs. decompilation |
-|-----------------------------------------|-------:|----------:|------------------:|
-| ILSpy-decompiled DLL                    | 52,919 |   ~13,200 | —                 |
-| `package-map.json`                      | 17,027 |    ~4,300 | **-68%**          |
-| `package-map.compact.json`              |  9,389 |    ~2,300 | **-82%**          |
-| `package-map.ultra`                     |  3,381 |      ~850 | **-94%**          |
+**Newtonsoft.Json** (127 public types, 1,198 members):
+
+| Source for the AI                       | Bytes     | ≈ Tokens† | vs. decompilation |
+|-----------------------------------------|----------:|----------:|------------------:|
+| ILSpy-decompiled `Newtonsoft.Json.dll`  | 1,863,427 |  ~466,000 | —                 |
+| `package-map.json`                      |   328,155 |   ~82,000 | **-82%**          |
+| `package-map.yaml`                      |   239,209 |   ~60,000 | **-87%**          |
+| `package-map.compact.json`              |   195,481 |   ~49,000 | **-90%**          |
+| `package-map.ultra`                     |   106,418 |   ~27,000 | **-94%**          |
+
+**Microsoft.EntityFrameworkCore 8.0.10** (a much larger surface):
+
+| Source for the AI                              | Bytes     | ≈ Tokens† | vs. decompilation |
+|------------------------------------------------|----------:|----------:|------------------:|
+| ILSpy-decompiled `Microsoft.EntityFrameworkCore.dll` | 9,574,757 | ~2,394,000 | —                 |
+| `package-map.json`                             | 4,262,664 | ~1,066,000 | **-55%**          |
+| `package-map.yaml`                             | 3,535,139 |   ~884,000 | **-63%**          |
+| `package-map.compact.json`                     | 3,244,493 |   ~811,000 | **-66%**          |
+| `package-map.ultra`                            | 2,483,495 |   ~621,000 | **-74%**          |
 
 † Bytes ÷ 4 is the standard rough estimate for English/code text in modern LLM tokenizers. The decompiled row is what actually lands in the AI's context window when it tries to inspect your package; the map rows are what NuSpec.AI provides instead.
 
-And decompiled output omits two things the AI needs most: **XML doc comments** (those live in a sibling `.xml` file that isn't always shipped to nuget.org) and **inferred semantic roles** (a decompiler has no notion of "this is a repository" or "this is a `DbContext`"). NuSpec.AI bundles both into the map directly.
+The map's footprint inside the `.nupkg` itself is small — JSON gzips well inside the zip envelope. Newtonsoft.Json grew from 332 KB to 360 KB (+8.4%); EF Core from 1.19 MB to 2.09 MB (+76%, dominated by ~7 MB of XML documentation comments preserved in the map).
 
-For the size of `package-map.json` itself: across 24 production projects (3.5 MB of source), it averages **32% smaller than the source code** with savings of 60–84% typical for service- and logic-heavy projects.
+And decompiled output omits two things the AI needs most: **XML doc comments** (those live in a sibling `.xml` file that isn't always shipped to nuget.org) and **inferred semantic roles** (a decompiler has no notion of "this is a repository" or "this is a `DbContext`"). NuSpec.AI bundles both into the map directly.
 
 ## Configuration
 
