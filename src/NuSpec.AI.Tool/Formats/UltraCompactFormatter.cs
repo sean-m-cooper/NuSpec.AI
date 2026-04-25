@@ -23,7 +23,7 @@ public sealed class UltraCompactFormatter : IFormatter
         if (pkg.TargetFrameworks.Count > 0)
             sb.AppendLine($"#tfm {string.Join(";", pkg.TargetFrameworks)}");
         if (deps.PackageReferences.Count > 0)
-            sb.AppendLine($"#dep {string.Join(";", deps.PackageReferences.Select(p => p.Id))}");
+            sb.AppendLine($"#dep {string.Join(";", deps.PackageReferences.Select(FormatDep))}");
         if (deps.FrameworkReferences.Count > 0)
             sb.AppendLine($"#fref {string.Join(";", deps.FrameworkReferences)}");
 
@@ -82,6 +82,14 @@ public sealed class UltraCompactFormatter : IFormatter
         }
 
         return sb.ToString().TrimEnd();
+    }
+
+    // "Acme.OrdersCore" v "1.2.0" map=true → "Acme.OrdersCore|1.2.0|1"
+    private static string FormatDep(PackageReferenceInfo p)
+    {
+        var version = p.Version ?? "";
+        var flag = p.HasNuSpecAiMap ? "1" : "0";
+        return $"{p.Id}|{version}|{flag}";
     }
 
     // "Pending = 0" → "Pending=0"
