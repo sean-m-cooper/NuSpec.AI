@@ -17,6 +17,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <DevelopmentDependency>true</DevelopmentDependency>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- NU5128: empty lib/<tfm>/_._ placeholders are intentional (build-only package). -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
   </PropertyGroup>
 
   <!-- NuGet readme -->
@@ -32,6 +34,16 @@
   <!-- Include the published CLI tool (populated by build.sh / dotnet publish) -->
   <ItemGroup>
     <None Include="tools\net8.0\**" PackagePath="tools\net8.0\" Pack="true" />
+  </ItemGroup>
+
+  <!-- Declare supported consumer target frameworks for the nuget.org Frameworks tab.
+       NuSpec.AI ships no runtime assets (build-only); _._ is the NuGet convention
+       for "this TFM is supported but contributes nothing to the consumer's bin". -->
+  <ItemGroup>
+    <None Include="_._" Pack="true" PackagePath="lib\netstandard2.0\" />
+    <None Include="_._" Pack="true" PackagePath="lib\net6.0\" />
+    <None Include="_._" Pack="true" PackagePath="lib\net8.0\" />
+    <None Include="_._" Pack="true" PackagePath="lib\net9.0\" />
   </ItemGroup>
 
   <!-- Attribute source files compiled into consumer assemblies -->
