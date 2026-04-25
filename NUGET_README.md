@@ -149,6 +149,7 @@ A consumer's AI doesn't have your source. Its only structural alternative to NuS
 |-----------------------------------------|----------:|----------:|------------------:|
 | ILSpy-decompiled `Newtonsoft.Json.dll`  | 1,863,427 |  ~466,000 | —                 |
 | `package-map.json`                      |   328,155 |   ~82,000 | **-82%**          |
+| `package-map.json` with `--full-docs` (v3.1, opt-in) |   636,713 |  ~159,000 | **-66%**          |
 | `package-map.yaml`                      |   239,209 |   ~60,000 | **-87%**          |
 | `package-map.compact.json`              |   195,481 |   ~49,000 | **-90%**          |
 | `package-map.ultra`                     |   106,418 |   ~27,000 | **-94%**          |
@@ -166,6 +167,8 @@ A consumer's AI doesn't have your source. Its only structural alternative to NuS
 † Bytes ÷ 4 is the standard rough estimate for English/code text in modern LLM tokenizers. The decompiled row is what actually lands in the AI's context window when it tries to inspect your package; the map rows are what NuSpec.AI provides instead.
 
 The map's footprint inside the `.nupkg` itself is small — JSON gzips well inside the zip envelope. Newtonsoft.Json grew from 332 KB to 360 KB (+8.4%); EF Core from 1.19 MB to 2.09 MB (+76%, dominated by ~7 MB of XML documentation comments preserved in the map).
+
+NuSpec.AI 3.1 adds `<NuSpecAiIncludeFullDocs>true</NuSpecAiIncludeFullDocs>` (or `--full-docs` on the CLI) to opt into capturing structured `<param>`, `<returns>`, `<remarks>`, `<example>`, and `<exception>` text on every type and member. The default `documentation` summary stays the same — turning the flag on roughly doubles the JSON map's size in exchange for a complete picture of the API contract. The `ultra` format ignores the flag by design.
 
 And decompiled output omits two things the AI needs most: **XML doc comments** (those live in a sibling `.xml` file that isn't always shipped to nuget.org) and **inferred semantic roles** (a decompiler has no notion of "this is a repository" or "this is a `DbContext`"). NuSpec.AI bundles both into the map directly.
 
