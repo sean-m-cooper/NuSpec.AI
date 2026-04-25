@@ -33,11 +33,12 @@ public class DependencyResolverTests : IDisposable
     private void WriteAssets(string targetsBlock, string? extraFolders = null)
     {
         var folders = extraFolders ?? "";
+        var rootJson = System.Text.Json.JsonSerializer.Serialize(_cacheRoot);
         var json = $$"""
             {
               "version": 3,
               "packageFolders": {
-                "{{_cacheRoot.Replace("\\", "\\\\")}}\\": {}{{folders}}
+                {{rootJson}}: {}{{folders}}
               },
               "targets": {
                 "net8.0": {

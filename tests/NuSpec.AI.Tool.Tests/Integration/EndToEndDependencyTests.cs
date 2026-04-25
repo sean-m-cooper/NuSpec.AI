@@ -44,11 +44,11 @@ public class EndToEndDependencyTests : IDisposable
             public class Thing { public int Id { get; set; } }
             """);
 
-        var assetsRoot = _cacheRoot.Replace("\\", "\\\\");
+        var rootJson = System.Text.Json.JsonSerializer.Serialize(_cacheRoot);
         File.WriteAllText(Path.Combine(_tempDir, "obj", "project.assets.json"), $$"""
             {
               "version": 3,
-              "packageFolders": { "{{assetsRoot}}\\": {} },
+              "packageFolders": { {{rootJson}}: {} },
               "targets": {
                 "net8.0": {
                   "Acme.OrdersCore/1.2.0": { "type": "package" },
