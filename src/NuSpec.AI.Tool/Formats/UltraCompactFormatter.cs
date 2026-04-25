@@ -17,7 +17,7 @@ public sealed class UltraCompactFormatter : IFormatter
         var surface = packageMap.PublicSurface;
 
         // Header
-        sb.AppendLine($"#NuSpec.AI/v1 {pkg.Id} {pkg.Version}");
+        sb.AppendLine($"#NuSpec.AI/v2 {pkg.Id} {pkg.Version}");
         if (!string.IsNullOrWhiteSpace(pkg.Description))
             sb.AppendLine($"#desc {pkg.Description}");
         if (pkg.TargetFrameworks.Count > 0)

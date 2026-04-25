@@ -23,7 +23,7 @@ public class UltraCompactFormatterTests : FormatterTestBase
     {
         var map = BuildSamplePackageMap();
         var result = _formatter.Serialize(map);
-        Assert.StartsWith("#NuSpec.AI/v1 Acme.Orders 1.0.0", result);
+        Assert.StartsWith("#NuSpec.AI/v2 Acme.Orders 1.0.0", result);
     }
 
     [Fact]
