@@ -143,12 +143,14 @@ It can recurse the same way through that map's own `packageReferences`. The resu
 
 A consumer's AI doesn't have your source. Its only structural alternative to NuSpec.AI is to **decompile your DLL** — which produces full method bodies, async state machines, backing fields, and compiler-generated artifacts. For a real-world project, NuSpec.AI's own ~50 KB CLI assembly:
 
-| Source for the AI                       | Bytes  | vs. decompilation |
-|-----------------------------------------|-------:|------------------:|
-| ILSpy-decompiled DLL                    | 52,919 | —                 |
-| `package-map.json`                      | 17,027 | **-68%**          |
-| `package-map.compact.json`              |  9,389 | **-82%**          |
-| `package-map.ultra`                     |  3,381 | **-94%**          |
+| Source for the AI                       | Bytes  | ≈ Tokens† | vs. decompilation |
+|-----------------------------------------|-------:|----------:|------------------:|
+| ILSpy-decompiled DLL                    | 52,919 |   ~13,200 | —                 |
+| `package-map.json`                      | 17,027 |    ~4,300 | **-68%**          |
+| `package-map.compact.json`              |  9,389 |    ~2,300 | **-82%**          |
+| `package-map.ultra`                     |  3,381 |      ~850 | **-94%**          |
+
+† Bytes ÷ 4 is the standard rough estimate for English/code text in modern LLM tokenizers. The decompiled row is what actually lands in the AI's context window when it tries to inspect your package; the map rows are what NuSpec.AI provides instead.
 
 And decompiled output omits two things the AI needs most: **XML doc comments** (those live in a sibling `.xml` file that isn't always shipped to nuget.org) and **inferred semantic roles** (a decompiler has no notion of "this is a repository" or "this is a `DbContext`"). NuSpec.AI bundles both into the map directly.
 
