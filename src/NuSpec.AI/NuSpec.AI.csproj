@@ -10,7 +10,7 @@
 
     <!-- Package metadata -->
     <PackageId>NuSpec.AI</PackageId>
-    <Version>3.0.0</Version>
+    <Version>3.0.2</Version>
     <Description>Automatically generates ai/package-map.json during dotnet pack, providing AI coding assistants with structured metadata about your package's public API surface. Supports JSON, YAML, and compact output formats plus opt-in attributes ([AiRole], [AiIgnore], [AiDescription]).</Description>
     <Authors>Sean Cooper</Authors>
     <PackageTags>AI;NuGet;documentation;metadata;Roslyn</PackageTags>
