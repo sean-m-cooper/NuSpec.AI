@@ -137,26 +137,7 @@ public class CsprojReaderTests : IDisposable
     }
 
     [Fact]
-    public void ReadsPackageReferences()
-    {
-        var path = WriteCsproj("""
-            <Project Sdk="Microsoft.NET.Sdk">
-              <PropertyGroup>
-                <TargetFramework>net8.0</TargetFramework>
-              </PropertyGroup>
-              <ItemGroup>
-                <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-                <PackageReference Include="Serilog" Version="3.0.0" />
-              </ItemGroup>
-            </Project>
-            """);
-
-        var deps = CsprojReader.ReadDependencies(path);
-        Assert.Equal(new[] { "Newtonsoft.Json", "Serilog" }, deps.PackageReferences);
-    }
-
-    [Fact]
-    public void ExcludesPrivateAssetsAll()
+    public void ReadDeclaredPackageReferences_ReturnsIdAndPrivateAssetsFlag()
     {
         var path = WriteCsproj("""
             <Project Sdk="Microsoft.NET.Sdk">
@@ -170,13 +151,39 @@ public class CsprojReaderTests : IDisposable
             </Project>
             """);
 
-        var deps = CsprojReader.ReadDependencies(path);
-        Assert.Single(deps.PackageReferences);
-        Assert.Equal("Visible.Package", deps.PackageReferences[0]);
+        var refs = CsprojReader.ReadDeclaredPackageReferences(path);
+
+        Assert.Equal(2, refs.Count);
+        var visible = refs.Single(r => r.Id == "Visible.Package");
+        Assert.False(visible.IsPrivateAssetsAll);
+        var hidden = refs.Single(r => r.Id == "Hidden.Package");
+        Assert.True(hidden.IsPrivateAssetsAll);
     }
 
     [Fact]
-    public void ReadsFrameworkReferences()
+    public void ReadDeclaredPackageReferences_DetectsChildElementPrivateAssets()
+    {
+        var path = WriteCsproj("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="A">
+                  <PrivateAssets>all</PrivateAssets>
+                </PackageReference>
+              </ItemGroup>
+            </Project>
+            """);
+
+        var refs = CsprojReader.ReadDeclaredPackageReferences(path);
+
+        Assert.Single(refs);
+        Assert.True(refs[0].IsPrivateAssetsAll);
+    }
+
+    [Fact]
+    public void ReadFrameworkReferences_ReturnsNames()
     {
         var path = WriteCsproj("""
             <Project Sdk="Microsoft.NET.Sdk">
@@ -189,8 +196,9 @@ public class CsprojReaderTests : IDisposable
             </Project>
             """);
 
-        var deps = CsprojReader.ReadDependencies(path);
-        Assert.Single(deps.FrameworkReferences);
-        Assert.Equal("Microsoft.AspNetCore.App", deps.FrameworkReferences[0]);
+        var refs = CsprojReader.ReadFrameworkReferences(path);
+
+        Assert.Single(refs);
+        Assert.Equal("Microsoft.AspNetCore.App", refs[0]);
     }
 }

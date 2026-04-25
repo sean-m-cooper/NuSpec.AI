@@ -32,6 +32,7 @@ Three opt-in attributes ship as `internal` source compiled into the consumer's a
 - **Filters to project sources only.** Types from metadata references (System.*, etc.) are excluded by checking `DeclaringSyntaxReferences` against the compilation's syntax trees.
 - **MSBuild integration uses `TargetsForTfmSpecificContentInPackage`.** This is the official NuGet SDK extensibility point. Earlier attempts with `None Pack="true"` and `_PackageFiles` added dynamically in targets did not work — items added in targets run too late for NuGet's static item collection.
 - **Attributes ship as source-only `contentFiles`.** They are `internal` to avoid type conflicts when multiple projects in a solution consume NuSpec.AI. Each consumer gets its own compiled copy.
+- **Transitive map discovery.** Each emitted `package-map.json` enriches its direct deps with resolved version and a `hasNuSpecAiMap` flag. AI tools resolve `<NuGet packages root>/<id-lower>/<version>/ai/package-map.json` to recurse. `DependencyResolver` orchestrates this at pack time using `CsprojReader` (declared refs) + `AssetsReader` (`obj/project.assets.json`) + filesystem probes.
 
 ## Build Commands
 
@@ -67,7 +68,7 @@ git push origin v2.x.x
 ## Conventions
 
 - Default output file is `ai/package-map.json` inside the .nupkg
-- `schemaVersion` in the JSON is `1` — increment on breaking schema changes
+- `schemaVersion` in the JSON is `2` — increment on breaking schema changes
 - Role inference is heuristic-based; a type can have multiple roles
 - `documentation` fields are omitted from JSON when no XML doc comment exists (not null)
 - `NUGET_README.md` is the consumer-facing readme for nuget.org; `README.md` is for GitHub

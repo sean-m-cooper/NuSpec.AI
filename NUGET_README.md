@@ -9,7 +9,7 @@ NuSpec.AI automatically generates a structured JSON map of your package's public
 1. Add the package to your `.csproj`:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="2.0.0" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="3.0.0" PrivateAssets="all" />
 ```
 
 2. Pack your project:
@@ -51,7 +51,7 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "package": {
     "id": "Acme.Orders",
     "version": "1.0.0",
@@ -60,7 +60,13 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
     "targetFrameworks": ["net8.0"]
   },
   "dependencies": {
-    "packageReferences": ["Microsoft.EntityFrameworkCore"],
+    "packageReferences": [
+      {
+        "id": "Microsoft.EntityFrameworkCore",
+        "version": "8.0.0",
+        "hasNuSpecAiMap": false
+      }
+    ],
     "frameworkReferences": []
   },
   "publicSurface": {

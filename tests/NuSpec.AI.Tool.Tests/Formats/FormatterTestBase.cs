@@ -16,7 +16,15 @@ public abstract class FormatterTestBase
         },
         Dependencies = new DependencyInfo
         {
-            PackageReferences = ["Microsoft.EntityFrameworkCore"],
+            PackageReferences =
+            [
+                new PackageReferenceInfo
+                {
+                    Id = "Microsoft.EntityFrameworkCore",
+                    Version = null,
+                    HasNuSpecAiMap = false
+                }
+            ],
             FrameworkReferences = []
         },
         PublicSurface = new PublicSurfaceInfo

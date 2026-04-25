@@ -9,7 +9,7 @@ NuSpec.AI automatically generates a structured JSON map of your package's public
 1. Add the package:
 
 ```xml
-<PackageReference Include="NuSpec.AI" Version="2.0.0" PrivateAssets="all" />
+<PackageReference Include="NuSpec.AI" Version="3.0.0" PrivateAssets="all" />
 ```
 
 2. Pack your project:
@@ -49,7 +49,7 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "package": {
     "id": "Acme.Orders",
     "version": "1.0.0",
@@ -58,7 +58,13 @@ NuSpec.AI produces `ai/package-map.json` inside the `.nupkg`:
     "targetFrameworks": ["net8.0"]
   },
   "dependencies": {
-    "packageReferences": ["Microsoft.EntityFrameworkCore"],
+    "packageReferences": [
+      {
+        "id": "Microsoft.EntityFrameworkCore",
+        "version": "8.0.0",
+        "hasNuSpecAiMap": false
+      }
+    ],
     "frameworkReferences": []
   },
   "publicSurface": {
@@ -134,13 +140,25 @@ NuSpec.AI goes beyond syntax parsing. By creating a Roslyn `CSharpCompilation`, 
 - **Merge partial classes** — automatically combine partial declarations into a single type entry
 - **Format signatures accurately** — use `ISymbol.ToDisplayString()` for correct generic type representations
 
+## Transitive Map Discovery
+
+Each emitted `package-map.json` lists its direct package dependencies along with a `hasNuSpecAiMap` flag. AI tools that want detail about a flagged dependency `A` should resolve:
+
+```
+<NuGet packages root>/<A.id-lowercase>/<A.version>/ai/package-map.json
+```
+
+The NuGet packages root is `~/.nuget/packages` on macOS/Linux and `%USERPROFILE%\.nuget\packages` on Windows by default; it can be overridden via the `NUGET_PACKAGES` environment variable or the `globalPackagesFolder` setting in `nuget.config`. Tools that read `obj/project.assets.json` (preferred) get the canonical `packageFolders` list directly — iterate them in order; the first match wins.
+
+To traverse the full dependency tree, recurse into each found map's own `packageReferences` entries.
+
 ## Schema Reference
 
 ### Root
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `schemaVersion` | `int` | Always `1`. Will increment on breaking changes. |
+| `schemaVersion` | `int` | Always `2`. Will increment on breaking changes. |
 | `package` | `object` | Package identity and metadata. |
 | `dependencies` | `object` | Package and framework references. |
 | `publicSurface` | `object` | All public types, members, and namespaces. |
@@ -159,8 +177,16 @@ NuSpec.AI goes beyond syntax parsing. By creating a Roslyn `CSharpCompilation`, 
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `packageReferences` | `string[]` | Package IDs. Excludes `PrivateAssets="all"`. |
+| `packageReferences` | `object[]` | One entry per direct package reference (excluding `PrivateAssets="all"`). See "Package References" below. |
 | `frameworkReferences` | `string[]` | Framework reference names. |
+
+### Package References
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Package id, declared casing preserved. |
+| `version` | `string \| null` | Resolved version from `obj/project.assets.json`. `null` if restore has not run. |
+| `hasNuSpecAiMap` | `bool` | `true` if the dependency itself ships a NuSpec.AI map. AI tools resolve `<NuGet packages root>/<id-lowercase>/<version>/ai/package-map.json` to read it. |
 
 ### Types
 

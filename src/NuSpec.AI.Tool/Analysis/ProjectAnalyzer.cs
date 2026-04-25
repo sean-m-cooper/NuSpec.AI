@@ -14,7 +14,7 @@ public static class ProjectAnalyzer
             ?? throw new InvalidOperationException($"Cannot determine directory for: {csprojPath}");
 
         var packageInfo = CsprojReader.ReadPackageInfo(csprojPath);
-        var dependencies = CsprojReader.ReadDependencies(csprojPath);
+        var dependencies = DependencyResolver.Resolve(csprojPath);
 
         var (compilation, projectTrees) = BuildCompilation(projectDir, packageInfo.Id);
         var publicSurface = ApiSurfaceCollector.Collect(compilation, projectTrees);
