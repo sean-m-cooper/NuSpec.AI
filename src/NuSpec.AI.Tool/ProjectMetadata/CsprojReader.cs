@@ -51,6 +51,41 @@ public static class CsprojReader
         };
     }
 
+    public static IReadOnlyList<DeclaredPackageReference> ReadDeclaredPackageReferences(string csprojPath)
+    {
+        var doc = XDocument.Load(csprojPath);
+        var ns = doc.Root?.Name.Namespace ?? XNamespace.None;
+
+        return doc.Descendants(ns + "PackageReference")
+            .Select(el =>
+            {
+                var id = el.Attribute("Include")?.Value ?? "";
+                var privateAssets = el.Attribute("PrivateAssets")?.Value
+                    ?? el.Element(ns + "PrivateAssets")?.Value;
+                var isPrivate = string.Equals(privateAssets, "all", StringComparison.OrdinalIgnoreCase);
+                return new DeclaredPackageReference
+                {
+                    Id = id,
+                    IsPrivateAssetsAll = isPrivate
+                };
+            })
+            .Where(r => !string.IsNullOrWhiteSpace(r.Id))
+            .ToList();
+    }
+
+    public static IReadOnlyList<string> ReadFrameworkReferences(string csprojPath)
+    {
+        var doc = XDocument.Load(csprojPath);
+        var ns = doc.Root?.Name.Namespace ?? XNamespace.None;
+
+        return doc.Descendants(ns + "FrameworkReference")
+            .Select(el => el.Attribute("Include")?.Value ?? "")
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct()
+            .OrderBy(name => name)
+            .ToList();
+    }
+
     public static DependencyInfo ReadDependencies(string csprojPath)
     {
         var doc = XDocument.Load(csprojPath);

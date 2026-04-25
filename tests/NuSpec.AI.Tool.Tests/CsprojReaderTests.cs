@@ -193,4 +193,70 @@ public class CsprojReaderTests : IDisposable
         Assert.Single(deps.FrameworkReferences);
         Assert.Equal("Microsoft.AspNetCore.App", deps.FrameworkReferences[0]);
     }
+
+    [Fact]
+    public void ReadDeclaredPackageReferences_ReturnsIdAndPrivateAssetsFlag()
+    {
+        var path = WriteCsproj("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="Visible.Package" Version="1.0.0" />
+                <PackageReference Include="Hidden.Package" Version="1.0.0" PrivateAssets="all" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var refs = CsprojReader.ReadDeclaredPackageReferences(path);
+
+        Assert.Equal(2, refs.Count);
+        var visible = refs.Single(r => r.Id == "Visible.Package");
+        Assert.False(visible.IsPrivateAssetsAll);
+        var hidden = refs.Single(r => r.Id == "Hidden.Package");
+        Assert.True(hidden.IsPrivateAssetsAll);
+    }
+
+    [Fact]
+    public void ReadDeclaredPackageReferences_DetectsChildElementPrivateAssets()
+    {
+        var path = WriteCsproj("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <PackageReference Include="A">
+                  <PrivateAssets>all</PrivateAssets>
+                </PackageReference>
+              </ItemGroup>
+            </Project>
+            """);
+
+        var refs = CsprojReader.ReadDeclaredPackageReferences(path);
+
+        Assert.Single(refs);
+        Assert.True(refs[0].IsPrivateAssetsAll);
+    }
+
+    [Fact]
+    public void ReadFrameworkReferences_ReturnsNames()
+    {
+        var path = WriteCsproj("""
+            <Project Sdk="Microsoft.NET.Sdk">
+              <PropertyGroup>
+                <TargetFramework>net8.0</TargetFramework>
+              </PropertyGroup>
+              <ItemGroup>
+                <FrameworkReference Include="Microsoft.AspNetCore.App" />
+              </ItemGroup>
+            </Project>
+            """);
+
+        var refs = CsprojReader.ReadFrameworkReferences(path);
+
+        Assert.Single(refs);
+        Assert.Equal("Microsoft.AspNetCore.App", refs[0]);
+    }
 }
