@@ -31,7 +31,7 @@ public class YamlFormatterTests : FormatterTestBase
     {
         var map = BuildSamplePackageMap();
         var result = _formatter.Serialize(map);
-        Assert.Contains("schemaVersion: 2", result);
+        Assert.Contains("schemaVersion: 3", result);
     }
 
     [Fact]

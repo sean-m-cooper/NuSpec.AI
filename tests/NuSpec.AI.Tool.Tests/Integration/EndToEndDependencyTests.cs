@@ -65,7 +65,7 @@ public class EndToEndDependencyTests : IDisposable
 
         var map = ProjectAnalyzer.Analyze(csproj);
 
-        Assert.Equal(2, map.SchemaVersion);
+        Assert.Equal(3, map.SchemaVersion);
         Assert.Equal(2, map.Dependencies.PackageReferences.Count);
 
         var acme = map.Dependencies.PackageReferences.Single(p => p.Id == "Acme.OrdersCore");
