@@ -1,4 +1,3 @@
-using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using NuSpec.AI.Tool.Models;
@@ -40,7 +39,7 @@ public static class ApiSurfaceCollector
         genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
         miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
-    public static PublicSurfaceInfo Collect(CSharpCompilation compilation, HashSet<SyntaxTree>? projectTrees = null)
+    public static PublicSurfaceInfo Collect(CSharpCompilation compilation, HashSet<SyntaxTree>? projectTrees = null, bool includeFullDocs = false)
     {
         var types = new List<TypeInfo>();
         var namespaces = new HashSet<string>();
@@ -49,7 +48,7 @@ public static class ApiSurfaceCollector
         // ProjectAnalyzer passes an explicit set that excludes NuGet-sourced contentFiles.
         projectTrees ??= new HashSet<SyntaxTree>(compilation.SyntaxTrees);
 
-        CollectPublicTypes(compilation.GlobalNamespace, types, namespaces, projectTrees);
+        CollectPublicTypes(compilation.GlobalNamespace, types, namespaces, projectTrees, includeFullDocs);
 
         return new PublicSurfaceInfo
         {
@@ -62,16 +61,17 @@ public static class ApiSurfaceCollector
         INamespaceSymbol namespaceSymbol,
         List<TypeInfo> types,
         HashSet<string> namespaces,
-        HashSet<SyntaxTree> projectTrees)
+        HashSet<SyntaxTree> projectTrees,
+        bool includeFullDocs)
     {
         foreach (var type in namespaceSymbol.GetTypeMembers())
         {
-            CollectType(type, types, namespaces, projectTrees);
+            CollectType(type, types, namespaces, projectTrees, includeFullDocs);
         }
 
         foreach (var childNamespace in namespaceSymbol.GetNamespaceMembers())
         {
-            CollectPublicTypes(childNamespace, types, namespaces, projectTrees);
+            CollectPublicTypes(childNamespace, types, namespaces, projectTrees, includeFullDocs);
         }
     }
 
@@ -79,7 +79,8 @@ public static class ApiSurfaceCollector
         INamedTypeSymbol typeSymbol,
         List<TypeInfo> types,
         HashSet<string> namespaces,
-        HashSet<SyntaxTree> projectTrees)
+        HashSet<SyntaxTree> projectTrees,
+        bool includeFullDocs)
     {
         if (typeSymbol.DeclaredAccessibility != Accessibility.Public)
             return;
@@ -116,17 +117,18 @@ public static class ApiSurfaceCollector
             Kind = GetTypeKind(typeSymbol),
             Roles = InferRoles(typeSymbol),
             Documentation = ExtractDocumentation(typeSymbol),
-            Members = CollectMembers(typeSymbol)
+            Docs = ExtractDocs(typeSymbol, includeFullDocs),
+            Members = CollectMembers(typeSymbol, includeFullDocs)
         });
 
         // Recurse into nested public types
         foreach (var nestedType in typeSymbol.GetTypeMembers())
         {
-            CollectType(nestedType, types, namespaces, projectTrees);
+            CollectType(nestedType, types, namespaces, projectTrees, includeFullDocs);
         }
     }
 
-    private static IReadOnlyList<MemberInfo> CollectMembers(INamedTypeSymbol typeSymbol)
+    private static IReadOnlyList<MemberInfo> CollectMembers(INamedTypeSymbol typeSymbol, bool includeFullDocs)
     {
         var members = new List<MemberInfo>();
 
@@ -149,7 +151,8 @@ public static class ApiSurfaceCollector
                     Kind = "enum-value",
                     Name = member.Name,
                     Signature = signature,
-                    Documentation = ExtractDocumentation(member)
+                    Documentation = ExtractDocumentation(member),
+                    Docs = ExtractDocs(member, includeFullDocs)
                 });
             }
             return members;
@@ -174,7 +177,8 @@ public static class ApiSurfaceCollector
                         Kind = "method",
                         Name = method.Name,
                         Signature = method.ToDisplayString(SignatureFormat),
-                        Documentation = ExtractDocumentation(method)
+                        Documentation = ExtractDocumentation(method),
+                        Docs = ExtractDocs(method, includeFullDocs)
                     },
                 IMethodSymbol method when method.MethodKind == MethodKind.Constructor =>
                     new MemberInfo
@@ -182,7 +186,8 @@ public static class ApiSurfaceCollector
                         Kind = "constructor",
                         Name = method.ContainingType.Name,
                         Signature = method.ToDisplayString(SignatureFormat),
-                        Documentation = ExtractDocumentation(method)
+                        Documentation = ExtractDocumentation(method),
+                        Docs = ExtractDocs(method, includeFullDocs)
                     },
                 IPropertySymbol property =>
                     new MemberInfo
@@ -190,7 +195,8 @@ public static class ApiSurfaceCollector
                         Kind = "property",
                         Name = property.Name,
                         Signature = property.ToDisplayString(SignatureFormat),
-                        Documentation = ExtractDocumentation(property)
+                        Documentation = ExtractDocumentation(property),
+                        Docs = ExtractDocs(property, includeFullDocs)
                     },
                 IFieldSymbol field when !field.IsConst && field.AssociatedSymbol is null =>
                     new MemberInfo
@@ -198,7 +204,8 @@ public static class ApiSurfaceCollector
                         Kind = "field",
                         Name = field.Name,
                         Signature = field.ToDisplayString(SignatureFormat),
-                        Documentation = ExtractDocumentation(field)
+                        Documentation = ExtractDocumentation(field),
+                        Docs = ExtractDocs(field, includeFullDocs)
                     },
                 IFieldSymbol field when field.IsConst =>
                     new MemberInfo
@@ -206,7 +213,8 @@ public static class ApiSurfaceCollector
                         Kind = "field",
                         Name = field.Name,
                         Signature = field.ToDisplayString(SignatureFormat),
-                        Documentation = ExtractDocumentation(field)
+                        Documentation = ExtractDocumentation(field),
+                        Docs = ExtractDocs(field, includeFullDocs)
                     },
                 _ => null
             };
@@ -348,25 +356,15 @@ public static class ApiSurfaceCollector
         }
 
         var xml = symbol.GetDocumentationCommentXml();
-        if (string.IsNullOrWhiteSpace(xml))
-            return null;
+        var docs = XmlDocParser.Parse(xml ?? "", fullDocs: false);
+        return docs?.Summary;
+    }
 
-        try
-        {
-            var doc = XDocument.Parse(xml);
-            var summary = doc.Descendants("summary").FirstOrDefault();
-            if (summary is null)
-                return null;
-
-            var text = summary.Value.Trim();
-            // Normalize whitespace (collapse multiple spaces/newlines into single space)
-            text = System.Text.RegularExpressions.Regex.Replace(text, @"\s+", " ");
-            return string.IsNullOrWhiteSpace(text) ? null : text;
-        }
-        catch
-        {
-            return null;
-        }
+    private static DocsInfo? ExtractDocs(ISymbol symbol, bool includeFullDocs)
+    {
+        if (!includeFullDocs) return null;
+        var xml = symbol.GetDocumentationCommentXml();
+        return XmlDocParser.Parse(xml ?? "", fullDocs: true);
     }
 
     // --------------------------------------------------------------------

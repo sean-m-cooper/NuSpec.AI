@@ -16,4 +16,8 @@ public sealed class MemberInfo
     [JsonPropertyName("documentation")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Documentation { get; init; }
+
+    [JsonPropertyName("docs")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DocsInfo? Docs { get; init; }
 }
