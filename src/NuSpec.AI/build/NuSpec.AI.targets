@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <_NuSpecAiToolPath>$(MSBuildThisFileDirectory)..\tools\net8.0\NuSpec.AI.Tool.dll</_NuSpecAiToolPath>
-    <_NuSpecAiOutputDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)nuspec-ai'))</_NuSpecAiOutputDir>
+    <_NuSpecAiOutputDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'nuspec-ai'))</_NuSpecAiOutputDir>
     <!-- Strip trailing slash so the quoted path doesn't become '\"' in shell invocation (Windows quirk) -->
     <_NuSpecAiOutputDirForCli>$(_NuSpecAiOutputDir.TrimEnd('\').TrimEnd('/'))</_NuSpecAiOutputDirForCli>
   </PropertyGroup>
